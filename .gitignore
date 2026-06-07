@@ -1,0 +1,8 @@
+# Local Claude Code preview/launch config (not part of the site)
+.claude/
+
+# OS / editor cruft
+Thumbs.db
+.DS_Store
+desktop.ini
+*.log
