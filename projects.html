@@ -10,36 +10,40 @@
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-primary: #0a0e17;
-            --bg-secondary: #0f1520;
-            --bg-card: #111827;
-            --bg-card-hover: #1a2332;
-            --bg-elevated: #151d2b;
-            --border-color: #1e293b;
-            --border-subtle: #162033;
-            --border-hover: #334155;
-            --text-primary: #e2e8f0;
-            --text-secondary: #94a3b8;
-            --text-muted: #64748b;
-            --text-dim: #475569;
-            --accent-cyan: #22d3ee;
-            --accent-blue: #3b82f6;
-            --accent-purple: #a78bfa;
-            --accent-green: #34d399;
-            --accent-yellow: #fbbf24;
-            --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+            /* Surfaces — neutral near-black, zero blue cast */
+            --bg-primary: #08080A;
+            --bg-secondary: #0D0D10;
+            --bg-card: #111114;
+            --bg-card-hover: #17171B;
+            --bg-elevated: #1A1A1F;
+            /* Hairlines as alpha, not solid hex */
+            --border-color: rgba(255, 255, 255, 0.07);
+            --border-subtle: rgba(255, 255, 255, 0.05);
+            --border-hover: rgba(255, 255, 255, 0.14);
+            /* Text — neutral zinc */
+            --text-primary: #F4F4F5;
+            --text-secondary: #A1A1AA;
+            --text-muted: #71717A;
+            --text-dim: #52525B;
+            /* Accent — electric cyan, dominant */
+            --accent-cyan: #22D3EE;
+            --accent-blue: #6366F1;
+            --accent-purple: #A78BFA;
+            --accent-green: #34D399;
+            --accent-yellow: #FBBF24;
+            --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
             --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             --font-display: 'Space Grotesk', 'Inter', sans-serif;
             --radius-sm: 6px;
             --radius-md: 10px;
             --radius-lg: 16px;
-            --transition-fast: 150ms ease;
-            --transition-normal: 250ms ease;
+            --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-normal: 260ms cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
-        html { scroll-behavior: smooth; font-size: 16px; }
+        html { scroll-behavior: smooth; font-size: 16px; scroll-padding-top: 84px; }
 
         body {
             font-family: var(--font-sans);
@@ -49,23 +53,76 @@
             overflow-x: hidden;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
-            background-image:
-                radial-gradient(circle at 15% 10%, rgba(34, 211, 238, 0.06), transparent 40%),
-                radial-gradient(circle at 85% 0%, rgba(59, 130, 246, 0.07), transparent 45%);
-            background-attachment: fixed;
         }
 
         a { text-decoration: none; color: inherit; transition: color var(--transition-fast); }
 
+        ::selection { background: rgba(34, 211, 238, 0.3); color: #fff; }
+        :focus-visible { outline: 2px solid var(--accent-cyan); outline-offset: 3px; border-radius: 4px; }
+
+        ::-webkit-scrollbar { width: 11px; height: 11px; }
+        ::-webkit-scrollbar-track { background: var(--bg-primary); }
+        ::-webkit-scrollbar-thumb {
+            background: #26262B; border: 3px solid var(--bg-primary); border-radius: 99px;
+        }
+        ::-webkit-scrollbar-thumb:hover { background: #35353C; }
+
+        /* ---------- Ambient background layers ---------- */
+        .bg-glow, .bg-grid, .bg-aurora, .bg-grain {
+            position: fixed; inset: 0; pointer-events: none; z-index: 0;
+        }
+        .bg-glow {
+            background:
+                radial-gradient(760px 420px at 50% -8%, rgba(34, 211, 238, 0.10), transparent 70%),
+                radial-gradient(1100px 700px at 50% 0%, rgba(34, 211, 238, 0.04), transparent 75%);
+        }
+        .bg-grid {
+            background-image:
+                repeating-linear-gradient(to right,  rgba(255,255,255,0.025) 0 1px, transparent 1px 64px),
+                repeating-linear-gradient(to bottom, rgba(255,255,255,0.025) 0 1px, transparent 1px 64px);
+            -webkit-mask-image: radial-gradient(ellipse 90% 55% at 50% 0%, #000 10%, transparent 72%);
+            mask-image: radial-gradient(ellipse 90% 55% at 50% 0%, #000 10%, transparent 72%);
+        }
+        .bg-aurora { overflow: hidden; }
+        .bg-aurora span {
+            position: absolute; display: block; border-radius: 50%;
+            filter: blur(120px); opacity: 0.5;
+        }
+        .bg-aurora span:nth-child(1) {
+            width: 520px; height: 520px; top: -160px; left: 8%;
+            background: radial-gradient(circle, rgba(34, 211, 238, 0.16), transparent 70%);
+        }
+        .bg-aurora span:nth-child(2) {
+            width: 460px; height: 460px; top: 4%; right: 6%;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.12), transparent 70%);
+        }
+        .bg-grain {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+            opacity: 0.035; mix-blend-mode: overlay;
+        }
+        @media (prefers-reduced-motion: no-preference) {
+            .bg-aurora span:nth-child(1) { animation: drift-a 24s ease-in-out infinite alternate; }
+            .bg-aurora span:nth-child(2) { animation: drift-b 30s ease-in-out infinite alternate; }
+        }
+        @keyframes drift-a {
+            from { transform: translate3d(0, 0, 0) scale(1); }
+            to   { transform: translate3d(90px, 60px, 0) scale(1.12); }
+        }
+        @keyframes drift-b {
+            from { transform: translate3d(0, 0, 0) scale(1.08); }
+            to   { transform: translate3d(-70px, 40px, 0) scale(1); }
+        }
+        .navbar, .hero, main, footer { position: relative; z-index: 1; }
+
         /* ---------- Navbar ---------- */
         .navbar {
             position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
-            background: rgba(10, 14, 23, 0.85);
-            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            background: rgba(8, 8, 10, 0.82);
+            backdrop-filter: blur(18px) saturate(150%); -webkit-backdrop-filter: blur(18px) saturate(150%);
             border-bottom: 1px solid var(--border-subtle);
         }
         .nav-container {
-            max-width: 1200px; margin: 0 auto; padding: 0 24px; height: 56px;
+            max-width: 1200px; margin: 0 auto; padding: 0 24px; height: 60px;
             display: flex; align-items: center; justify-content: space-between;
         }
         .nav-back {
@@ -243,8 +300,8 @@
             display: inline-flex; align-items: center; gap: 9px; transition: all var(--transition-fast);
             border: 1px solid transparent; cursor: pointer;
         }
-        .btn-primary { background: var(--accent-cyan); color: #06202a; }
-        .btn-primary:hover { background: #67e8f9; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(34, 211, 238, 0.25); }
+        .btn-primary { background: var(--accent-cyan); color: #04141a; }
+        .btn-primary:hover { background: #4EDDF3; transform: translateY(-2px); box-shadow: 0 8px 28px -6px rgba(34, 211, 238, 0.4); }
         .btn-ghost { background: transparent; color: var(--text-primary); border-color: var(--border-hover); }
         .btn-ghost:hover { background: var(--bg-card); border-color: var(--accent-cyan); color: var(--accent-cyan); }
         .resume-preview {
@@ -257,7 +314,7 @@
         .resume-preview:hover img { transform: scale(1.015); }
         .resume-preview-overlay {
             position: absolute; left: 0; right: 0; bottom: 0; padding: 28px 16px 16px;
-            background: linear-gradient(transparent, rgba(10, 14, 23, 0.92));
+            background: linear-gradient(transparent, rgba(8, 8, 10, 0.94));
             color: #fff; font-family: var(--font-mono); font-size: 0.8rem; font-weight: 600;
             line-height: 1.4; display: flex; align-items: center; justify-content: center; gap: 8px;
             opacity: 0; transition: opacity var(--transition-normal);
@@ -299,10 +356,16 @@
     </style>
 </head>
 <body>
+    <!-- Ambient background layers -->
+    <div class="bg-glow" aria-hidden="true"></div>
+    <div class="bg-grid" aria-hidden="true"></div>
+    <div class="bg-aurora" aria-hidden="true"><span></span><span></span></div>
+    <div class="bg-grain" aria-hidden="true"></div>
+
     <nav class="navbar">
         <div class="nav-container">
             <a href="index.html" class="nav-back">← BACK TO SITE</a>
-            <a href="#" class="nav-logo">S<span>.</span></a>
+            <a href="index.html" class="nav-logo">S<span>.</span></a>
             <a href="https://github.com/soumikbelel3-commits" target="_blank" rel="noopener noreferrer" class="nav-gh">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
                 <span class="gh-user">@soumikbelel3-commits</span>

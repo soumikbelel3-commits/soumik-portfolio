@@ -1,194 +1,257 @@
-/* ========================================
-   Portfolio JavaScript
-   Interactive Canvas Animations & UI Logic
-   ======================================== */
+/* ==========================================================================
+   Soumik Belel — portfolio
+   Vanilla JS. No dependencies.
+   ========================================================================== */
 
-document.addEventListener('DOMContentLoaded', () => {
-    initSpiralCanvas();
-    initKnowledgeGraph();
-    initExploringCanvas();
-    initScrollAnimations();
-    initNavigation();
-    initTypingEffect();
-});
+const REDUCE_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-/* ========================================
-   Spiral Galaxy Canvas (Hero Section)
-   ======================================== */
+/* Read a CSS custom property so canvases follow the palette
+   instead of drifting from it. */
+const _tokenCache = {};
+function token(name, fallback) {
+    if (_tokenCache[name] === undefined) {
+        const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+        _tokenCache[name] = v || fallback || '#ffffff';
+    }
+    return _tokenCache[name];
+}
+
+function hexToRgb(hex) {
+    const h = hex.replace('#', '');
+    const full = h.length === 3 ? h.split('').map(c => c + c).join('') : h;
+    return [
+        parseInt(full.slice(0, 2), 16),
+        parseInt(full.slice(2, 4), 16),
+        parseInt(full.slice(4, 6), 16)
+    ];
+}
+function rgba(hex, a) {
+    const [r, g, b] = hexToRgb(hex);
+    return `rgba(${r}, ${g}, ${b}, ${a})`;
+}
+
+/* Set up a canvas for the device pixel ratio. Uses setTransform rather than
+   scale() so repeated resizes don't compound the transform. */
+function fitCanvas(canvas, ctx) {
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.parentElement.getBoundingClientRect();
+    canvas.width = Math.max(1, Math.round(rect.width * dpr));
+    canvas.height = Math.max(1, Math.round(rect.height * dpr));
+    canvas.style.width = rect.width + 'px';
+    canvas.style.height = rect.height + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { w: rect.width, h: rect.height };
+}
+
+/* Keep a canvas locked to its container. Measuring once at DOMContentLoaded
+   is not enough — web fonts and late layout can resize the container
+   afterwards, which would leave the canvas at the wrong size. */
+function watchSize(canvas, onResize) {
+    onResize();
+    if ('ResizeObserver' in window) {
+        new ResizeObserver(() => onResize()).observe(canvas.parentElement);
+    }
+    // ResizeObserver callbacks are delivered through the frame pipeline, so
+    // keep the plain listeners too — they still fire when frames are throttled.
+    window.addEventListener('resize', onResize);
+    window.addEventListener('load', onResize);
+}
+
+/* Lets the journey section talk to the constellation without either
+   module knowing about the other's internals. */
+const Bus = { focusCluster: null };
+
+/* ==========================================================================
+   Hero snapshot canvas — slow orbital rings
+   ========================================================================== */
 function initSpiralCanvas() {
     const canvas = document.getElementById('spiralCanvas');
     if (!canvas) return;
 
     const ctx = canvas.getContext('2d');
-    const dpr = window.devicePixelRatio || 1;
+    let W = 0, H = 0, time = 0;
+
+    const cy = token('--cy', '#22D3EE');
+    const hues = [
+        token('--hue-1', '#22D3EE'), token('--hue-2', '#A78BFA'),
+        token('--hue-3', '#34D399'), token('--hue-4', '#FBBF24'),
+        token('--hue-5', '#F472B6')
+    ];
 
     function resize() {
-        const rect = canvas.parentElement.getBoundingClientRect();
-        canvas.width = rect.width * dpr;
-        canvas.height = rect.height * dpr;
-        canvas.style.width = rect.width + 'px';
-        canvas.style.height = rect.height + 'px';
-        ctx.scale(dpr, dpr);
+        const d = fitCanvas(canvas, ctx);
+        W = d.w; H = d.h;
+        // Resizing the backing store clears it, so repaint now rather than
+        // waiting on the next animation frame.
+        render();
     }
 
-    resize();
-    window.addEventListener('resize', resize);
+    function render() {
+        ctx.clearRect(0, 0, W, H);
+        const cx = W / 2, ccy = H / 2;
+        const scale = Math.min(W, H) / 130;
 
-    let time = 0;
-
-    function drawSpiral() {
-        const w = canvas.width / dpr;
-        const h = canvas.height / dpr;
-
-        ctx.clearRect(0, 0, w, h);
-
-        const cx = w / 2;
-        const cy = h / 2;
-
-        // Draw spiral arms
-        for (let arm = 0; arm < 3; arm++) {
-            const armOffset = (arm * Math.PI * 2) / 3;
-
+        // Concentric rings
+        for (let i = 0; i < 5; i++) {
+            const r = (14 + i * 11) * scale;
             ctx.beginPath();
-            for (let i = 0; i < 200; i++) {
-                const t = i / 200;
-                const angle = t * Math.PI * 4 + armOffset + time * 0.3;
-                const radius = t * Math.min(w, h) * 0.42;
-                const x = cx + Math.cos(angle) * radius;
-                const y = cy + Math.sin(angle) * radius;
-
-                if (i === 0) {
-                    ctx.moveTo(x, y);
-                } else {
-                    ctx.lineTo(x, y);
-                }
-            }
-            ctx.strokeStyle = `rgba(34, 211, 238, ${0.08 + arm * 0.03})`;
+            ctx.arc(cx, ccy, r, 0, Math.PI * 2);
+            ctx.strokeStyle = rgba(cy, 0.07 + i * 0.015);
             ctx.lineWidth = 1;
             ctx.stroke();
         }
 
-        // Draw particles along spiral
-        for (let i = 0; i < 60; i++) {
-            const t = (i / 60 + time * 0.02) % 1;
-            const arm = i % 3;
-            const armOffset = (arm * Math.PI * 2) / 3;
-            const angle = t * Math.PI * 4 + armOffset + time * 0.3;
-            const radius = t * Math.min(w, h) * 0.42;
-            const x = cx + Math.cos(angle) * radius + Math.sin(time + i) * 2;
-            const y = cy + Math.sin(angle) * radius + Math.cos(time + i) * 2;
+        // One dot per career stage, each on its own orbit
+        for (let i = 0; i < 5; i++) {
+            const orbit = (18 + i * 11) * scale;
+            const angle = time * (0.34 - i * 0.04) + (i * Math.PI * 2) / 5;
+            const x = cx + Math.cos(angle) * orbit;
+            const y = ccy + Math.sin(angle) * orbit;
+            const color = hues[i];
 
-            const size = 1 + Math.sin(time + i * 0.5) * 0.5;
-            const alpha = 0.3 + t * 0.5;
-
-            const colors = ['#22d3ee', '#3b82f6', '#a78bfa', '#34d399', '#fbbf24'];
-            const color = colors[i % colors.length];
+            const glow = ctx.createRadialGradient(x, y, 0, x, y, 8 * scale);
+            glow.addColorStop(0, rgba(color, 0.28));
+            glow.addColorStop(1, rgba(color, 0));
+            ctx.beginPath();
+            ctx.arc(x, y, 8 * scale, 0, Math.PI * 2);
+            ctx.fillStyle = glow;
+            ctx.fill();
 
             ctx.beginPath();
-            ctx.arc(x, y, size, 0, Math.PI * 2);
-
-            // Convert hex to rgba
-            const r = parseInt(color.slice(1, 3), 16);
-            const g = parseInt(color.slice(3, 5), 16);
-            const b = parseInt(color.slice(5, 7), 16);
-            ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
+            ctx.arc(x, y, (i === 0 ? 3 : 2.2) * scale, 0, Math.PI * 2);
+            ctx.fillStyle = rgba(color, i === 0 ? 0.95 : 0.6);
             ctx.fill();
         }
 
-        // Center glow
-        const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, 30);
-        gradient.addColorStop(0, 'rgba(34, 211, 238, 0.15)');
-        gradient.addColorStop(1, 'rgba(34, 211, 238, 0)');
+        // Core
+        const core = ctx.createRadialGradient(cx, ccy, 0, cx, ccy, 16 * scale);
+        core.addColorStop(0, rgba(cy, 0.35));
+        core.addColorStop(1, rgba(cy, 0));
         ctx.beginPath();
-        ctx.arc(cx, cy, 30, 0, Math.PI * 2);
-        ctx.fillStyle = gradient;
+        ctx.arc(cx, ccy, 16 * scale, 0, Math.PI * 2);
+        ctx.fillStyle = core;
         ctx.fill();
 
-        // Center dot
         ctx.beginPath();
-        ctx.arc(cx, cy, 2, 0, Math.PI * 2);
-        ctx.fillStyle = '#22d3ee';
+        ctx.arc(cx, ccy, 3.4 * scale, 0, Math.PI * 2);
+        ctx.fillStyle = cy;
         ctx.fill();
 
-        time += 0.01;
-        requestAnimationFrame(drawSpiral);
     }
 
-    drawSpiral();
+    function frame() {
+        render();
+        time += 0.016;
+        requestAnimationFrame(frame);
+    }
+
+    watchSize(canvas, resize);
+    if (!REDUCE_MOTION) frame();
 }
 
-/* ========================================
-   Knowledge Graph Canvas
-   ======================================== */
-function initKnowledgeGraph() {
-    const canvas = document.getElementById('knowledgeGraph');
+/* ==========================================================================
+   Skills constellation
+   Five cluster hubs mirroring the five career stages, each with its own
+   tools orbiting it. Filled node = working with it; hollow dashed node =
+   still learning it.
+   ========================================================================== */
+function initSkillsConstellation() {
+    const canvas = document.getElementById('skillsConstellation');
     if (!canvas) return;
 
     const ctx = canvas.getContext('2d');
-    const dpr = window.devicePixelRatio || 1;
 
-    function resize() {
-        const rect = canvas.parentElement.getBoundingClientRect();
-        canvas.width = rect.width * dpr;
-        canvas.height = rect.height * dpr;
-        canvas.style.width = rect.width + 'px';
-        canvas.style.height = rect.height + 'px';
-        ctx.scale(dpr, dpr);
+    const CLUSTERS = [
+        { key: 'analytics',   label: 'Analytics',  hue: token('--hue-1', '#22D3EE'), stage: '01' },
+        { key: 'science',     label: 'Science',    hue: token('--hue-2', '#A78BFA'), stage: '02' },
+        { key: 'engineering', label: 'Data Eng',   hue: token('--hue-3', '#34D399'), stage: '03' },
+        { key: 'bigdata',     label: 'Big Data',   hue: token('--hue-4', '#FBBF24'), stage: '04' },
+        { key: 'ai',          label: 'AI',         hue: token('--hue-5', '#F472B6'), stage: '05' }
+    ];
+
+    const TOOLS = {
+        analytics:   [['Python', 1], ['SQL', 1], ['Power BI', 1], ['Tableau', 1]],
+        science:     [['scikit-learn', 1], ['statsmodels', 1], ['SciPy', 1], ['Plotly', 1]],
+        engineering: [['PostgreSQL', 1], ['Redis', 1], ['FastAPI', 1], ['Docker', 0]],
+        bigdata:     [['Spark', 0], ['Kafka', 0], ['AWS', 0], ['Streaming', 0]],
+        ai:          [['LLMs', 0], ['RAG', 0], ['PyTorch', 0], ['MLOps', 0]]
+    };
+
+    // Build node + edge lists.
+    const nodes = [];
+    const edges = [];
+    const hubIndex = {};
+
+    CLUSTERS.forEach((c, ci) => {
+        hubIndex[c.key] = nodes.length;
+        nodes.push({
+            label: c.label, sub: 'Stage ' + c.stage, cluster: c.key,
+            color: c.hue, r: 27, hub: true, owned: true, ci
+        });
+    });
+
+    CLUSTERS.forEach((c) => {
+        const hi = hubIndex[c.key];
+        TOOLS[c.key].forEach(([name, owned]) => {
+            const idx = nodes.length;
+            nodes.push({
+                label: name, sub: owned ? 'working with it' : 'learning it',
+                cluster: c.key, color: c.hue, r: 15,
+                hub: false, owned: !!owned, ci: nodes[hi].ci
+            });
+            edges.push([hi, idx, !!owned]);
+        });
+    });
+
+    // Chain the hubs in career order — the path, drawn as a shape.
+    for (let i = 0; i < CLUSTERS.length - 1; i++) {
+        edges.push([hubIndex[CLUSTERS[i].key], hubIndex[CLUSTERS[i + 1].key], i === 0]);
     }
 
-    resize();
-    window.addEventListener('resize', resize);
-
-    // Knowledge domains — reflects the data / AI / markets focus.
-    const nodes = [
-        { label: 'Systems\nThinking', desc: 'how everything connects', r: 40, color: '#22d3ee', core: true },
-        { label: 'AI', desc: 'LLMs · Agents · ML', r: 26, color: '#3b82f6' },
-        { label: 'Data', desc: 'Python · SQL · ETL', r: 26, color: '#22d3ee' },
-        { label: 'Markets', desc: 'Trading · Macro', r: 24, color: '#fb923c' },
-        { label: 'Statistics', desc: 'Probability · Inference', r: 23, color: '#a78bfa' },
-        { label: 'Engineering', desc: 'Pipelines · Infra', r: 24, color: '#34d399' },
-        { label: 'Economics', desc: 'Incentives · Systems', r: 22, color: '#fbbf24' },
-        { label: 'Psychology', desc: 'Behaviour · Bias', r: 22, color: '#f472b6' },
-        { label: 'Viz', desc: 'Power BI · Tableau', r: 21, color: '#f87171' },
-    ];
-
-    // Edges between node indices.
-    const connections = [
-        [0, 1], [0, 2], [0, 3], [0, 4], [0, 5], [0, 6], [0, 7], [0, 8],
-        [1, 2], [2, 5], [2, 8], [2, 4], [1, 4], [3, 6], [3, 7], [4, 7], [5, 6], [4, 8]
-    ];
-
-    // Adjacency map for hover highlighting.
     const adj = nodes.map(() => new Set());
-    connections.forEach(([a, b]) => { adj[a].add(b); adj[b].add(a); });
-
-    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const hexToRgb = (hex) => [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)];
+    edges.forEach(([a, b]) => { adj[a].add(b); adj[b].add(a); });
 
     let W = 0, H = 0, time = 0;
     let mouseX = -1, mouseY = -1, hoverIdx = -1, dragIdx = -1;
+    let focused = null;   // cluster key highlighted from the journey section
 
     nodes.forEach(n => { n.x = 0; n.y = 0; n.vx = 0; n.vy = 0; n.hx = 0; n.hy = 0; });
 
-    // Compute "home" positions: core centred, domains on a ring.
     function layout() {
-        W = canvas.width / dpr; H = canvas.height / dpr;
-        const cx = W / 2, cy = H / 2;
-        const ring = Math.min(W, H) * 0.34;
-        nodes[0].hx = cx; nodes[0].hy = cy;
-        const domains = nodes.length - 1;
-        for (let i = 1; i < nodes.length; i++) {
-            const a = ((i - 1) / domains) * Math.PI * 2 - Math.PI / 2;
-            nodes[i].hx = cx + Math.cos(a) * ring;
-            nodes[i].hy = cy + Math.sin(a) * ring * 0.92;
-        }
-        nodes.forEach(n => { if (n.x === 0 && n.y === 0) { n.x = n.hx; n.y = n.hy; } });
+        const cx = W / 2, cyy = H / 2;
+        const base = Math.min(W, H);
+        const ring = base * 0.25;
+        const orbit = base * 0.145;
+
+        CLUSTERS.forEach((c, i) => {
+            const a = (i / CLUSTERS.length) * Math.PI * 2 - Math.PI / 2;
+            const hub = nodes[hubIndex[c.key]];
+            hub.hx = cx + Math.cos(a) * ring;
+            hub.hy = cyy + Math.sin(a) * ring * 0.94;
+
+            const leaves = nodes.filter(n => !n.hub && n.cluster === c.key);
+            leaves.forEach((leaf, li) => {
+                // Fan the tools outward from the centre, away from the hub.
+                const spread = 1.5;
+                const la = a + (li - (leaves.length - 1) / 2) * (spread / leaves.length);
+                leaf.hx = hub.hx + Math.cos(la) * orbit;
+                leaf.hy = hub.hy + Math.sin(la) * orbit * 0.94;
+            });
+        });
+
+        nodes.forEach(n => {
+            if (n.x === 0 && n.y === 0) { n.x = n.hx; n.y = n.hy; }
+        });
     }
 
-    function resizeAll() { resize(); layout(); }
-    layout();
-    window.removeEventListener('resize', resize);
-    window.addEventListener('resize', resizeAll);
+    function resizeAll() {
+        const d = fitCanvas(canvas, ctx);
+        W = d.w; H = d.h;
+        layout();
+        // Resizing the backing store clears it, so repaint now rather than
+        // waiting on the next animation frame.
+        render();
+    }
 
     function pointer(e) {
         const rect = canvas.getBoundingClientRect();
@@ -207,7 +270,8 @@ function initKnowledgeGraph() {
     canvas.addEventListener('mousemove', (e) => {
         const p = pointer(e); mouseX = p.x; mouseY = p.y;
         if (dragIdx >= 0) {
-            const n = nodes[dragIdx]; n.x = p.x; n.y = p.y; n.vx = 0; n.vy = 0;
+            const n = nodes[dragIdx];
+            n.x = p.x; n.y = p.y; n.vx = 0; n.vy = 0;
             canvas.style.cursor = 'grabbing';
         } else {
             hoverIdx = nearest(p.x, p.y);
@@ -216,23 +280,57 @@ function initKnowledgeGraph() {
     });
     canvas.addEventListener('mouseleave', () => { mouseX = -1; mouseY = -1; hoverIdx = -1; });
     canvas.addEventListener('mousedown', (e) => {
-        const p = pointer(e); const i = nearest(p.x, p.y);
+        const p = pointer(e);
+        const i = nearest(p.x, p.y);
         if (i >= 0) { dragIdx = i; canvas.style.cursor = 'grabbing'; }
     });
     window.addEventListener('mouseup', () => { dragIdx = -1; });
 
-    // Physics: spring each node to its home, repel from the cursor, damp.
+    canvas.addEventListener('touchmove', (e) => {
+        const p = pointer(e); mouseX = p.x; mouseY = p.y;
+        if (dragIdx >= 0) {
+            const n = nodes[dragIdx];
+            n.x = p.x; n.y = p.y; n.vx = 0; n.vy = 0;
+            e.preventDefault();
+        }
+    }, { passive: false });
+    canvas.addEventListener('touchstart', (e) => {
+        const p = pointer(e);
+        const i = nearest(p.x, p.y);
+        if (i >= 0) { dragIdx = i; hoverIdx = i; }
+    }, { passive: true });
+    window.addEventListener('touchend', () => { dragIdx = -1; });
+
+    // Journey section drives this. Repaint immediately so the response to a
+    // click never waits on the next animation frame.
+    Bus.focusCluster = (key) => { focused = key; render(); };
+
+    const resetBtn = document.getElementById('constellationReset');
+    if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+            focused = null;
+            nodes.forEach(n => { n.x = n.hx; n.y = n.hy; n.vx = 0; n.vy = 0; });
+            render();
+        });
+    }
+
     function step() {
         for (let i = 0; i < nodes.length; i++) {
-            const n = nodes[i];
             if (i === dragIdx) continue;
-            const driftX = reduceMotion ? 0 : Math.sin(time * 0.6 + i * 1.3) * 2.2;
-            const driftY = reduceMotion ? 0 : Math.cos(time * 0.5 + i * 0.9) * 2.2;
-            n.vx += (n.hx + driftX - n.x) * 0.02;
-            n.vy += (n.hy + driftY - n.y) * 0.02;
-            if (!reduceMotion && mouseX >= 0 && dragIdx < 0) {
-                const dx = n.x - mouseX, dy = n.y - mouseY, d = Math.hypot(dx, dy);
-                if (d < 90 && d > 0.001) { const f = (90 - d) / 90 * 1.6; n.vx += dx / d * f; n.vy += dy / d * f; }
+            const n = nodes[i];
+            const driftX = REDUCE_MOTION ? 0 : Math.sin(time * 0.55 + i * 1.3) * 2;
+            const driftY = REDUCE_MOTION ? 0 : Math.cos(time * 0.47 + i * 0.9) * 2;
+            n.vx += (n.hx + driftX - n.x) * 0.022;
+            n.vy += (n.hy + driftY - n.y) * 0.022;
+
+            if (!REDUCE_MOTION && mouseX >= 0 && dragIdx < 0) {
+                const dx = n.x - mouseX, dy = n.y - mouseY;
+                const d = Math.hypot(dx, dy);
+                if (d < 80 && d > 0.001) {
+                    const f = (80 - d) / 80 * 1.4;
+                    n.vx += dx / d * f;
+                    n.vy += dy / d * f;
+                }
             }
             n.vx *= 0.86; n.vy *= 0.86;
             n.x += n.vx; n.y += n.vy;
@@ -249,403 +347,420 @@ function initKnowledgeGraph() {
         c.closePath();
     }
 
-    function drawGraph() {
-        if (W === 0) layout();
+    const TEXT_HI = token('--text-hi', '#F4F4F5');
+    const TEXT_LO = token('--text-lo', '#71717A');
+    const PANEL_BG = token('--bg-overlay', '#1A1A1F');
+
+    function render() {
+        if (W === 0) return;
         ctx.clearRect(0, 0, W, H);
         step();
 
         const hovering = hoverIdx >= 0;
-        const isLit = (i) => !hovering || i === hoverIdx || adj[hoverIdx].has(i);
+        // A node is "lit" if nothing is hovered/focused, or it's part of the
+        // hovered neighbourhood, or it belongs to the focused cluster.
+        const isLit = (i) => {
+            if (hovering) return i === hoverIdx || adj[hoverIdx].has(i);
+            if (focused) return nodes[i].cluster === focused;
+            return true;
+        };
 
-        // Edges with gradient + flowing particle.
-        connections.forEach(([a, b]) => {
+        // Edges
+        edges.forEach(([a, b, solid]) => {
             const pa = nodes[a], pb = nodes[b];
-            const lit = !hovering || a === hoverIdx || b === hoverIdx;
-            const [ra, ga, ba] = hexToRgb(pa.color), [rb, gb, bb] = hexToRgb(pb.color);
-            const ea = lit ? 0.45 : 0.05;
+            const lit = isLit(a) && isLit(b);
+            const alpha = lit ? (solid ? 0.4 : 0.22) : 0.05;
+
             const grad = ctx.createLinearGradient(pa.x, pa.y, pb.x, pb.y);
-            grad.addColorStop(0, `rgba(${ra}, ${ga}, ${ba}, ${ea})`);
-            grad.addColorStop(1, `rgba(${rb}, ${gb}, ${bb}, ${ea})`);
-            ctx.beginPath(); ctx.moveTo(pa.x, pa.y); ctx.lineTo(pb.x, pb.y);
-            ctx.strokeStyle = grad; ctx.lineWidth = lit ? 1.6 : 1; ctx.stroke();
+            grad.addColorStop(0, rgba(pa.color, alpha));
+            grad.addColorStop(1, rgba(pb.color, alpha));
 
-            if (!reduceMotion) {
-                const tt = (time * 0.25 + a * 0.3 + b * 0.2) % 1;
-                const px = pa.x + (pb.x - pa.x) * tt, py = pa.y + (pb.y - pa.y) * tt;
-                ctx.beginPath(); ctx.arc(px, py, lit ? 2 : 1.3, 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(226, 232, 240, ${lit ? 0.7 : 0.2})`; ctx.fill();
+            ctx.save();
+            if (!solid) ctx.setLineDash([3, 4]);
+            ctx.beginPath();
+            ctx.moveTo(pa.x, pa.y);
+            ctx.lineTo(pb.x, pb.y);
+            ctx.strokeStyle = grad;
+            ctx.lineWidth = lit ? 1.4 : 1;
+            ctx.stroke();
+            ctx.restore();
+
+            // A packet travelling the edge — only on solid (owned) links.
+            if (!REDUCE_MOTION && solid && lit) {
+                const t = (time * 0.22 + a * 0.3 + b * 0.2) % 1;
+                const px = pa.x + (pb.x - pa.x) * t;
+                const py = pa.y + (pb.y - pa.y) * t;
+                ctx.beginPath();
+                ctx.arc(px, py, 1.8, 0, Math.PI * 2);
+                ctx.fillStyle = rgba(TEXT_HI, 0.55);
+                ctx.fill();
             }
         });
 
-        // Nodes.
+        // Nodes
         nodes.forEach((n, i) => {
-            const [r, g, b] = hexToRgb(n.color);
-            const lit = isLit(i), hov = i === hoverIdx;
-            const R = n.r * (hov ? 1.12 : (lit ? 1 : 0.96));
-            const alpha = lit ? 1 : 0.4;
+            const lit = isLit(i);
+            const hov = i === hoverIdx;
+            const R = n.r * (hov ? 1.14 : 1);
+            const alpha = lit ? 1 : 0.28;
 
-            if (n.core || hov || (hovering && lit)) {
-                const gg = ctx.createRadialGradient(n.x, n.y, R * 0.4, n.x, n.y, R * 2);
-                gg.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${hov ? 0.28 : 0.16})`);
-                gg.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
-                ctx.beginPath(); ctx.arc(n.x, n.y, R * 2, 0, Math.PI * 2); ctx.fillStyle = gg; ctx.fill();
+            // Halo
+            if (n.hub || hov) {
+                const g = ctx.createRadialGradient(n.x, n.y, R * 0.4, n.x, n.y, R * 2.1);
+                g.addColorStop(0, rgba(n.color, (hov ? 0.3 : 0.15) * alpha));
+                g.addColorStop(1, rgba(n.color, 0));
+                ctx.beginPath();
+                ctx.arc(n.x, n.y, R * 2.1, 0, Math.PI * 2);
+                ctx.fillStyle = g;
+                ctx.fill();
             }
-            if (n.core && !reduceMotion) {
-                const pr = R + 6 + Math.sin(time * 2) * 3;
-                ctx.beginPath(); ctx.arc(n.x, n.y, pr, 0, Math.PI * 2);
-                ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, 0.18)`; ctx.lineWidth = 1; ctx.stroke();
-            }
-            ctx.beginPath(); ctx.arc(n.x, n.y, R, 0, Math.PI * 2);
-            ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${(n.core ? 0.16 : 0.12) * alpha + 0.02})`; ctx.fill();
-            ctx.beginPath(); ctx.arc(n.x, n.y, R, 0, Math.PI * 2);
-            ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${(hov ? 0.9 : 0.4) * alpha})`;
-            ctx.lineWidth = hov ? 2 : 1.2; ctx.stroke();
 
-            ctx.fillStyle = lit ? n.color : `rgba(${r}, ${g}, ${b}, 0.5)`;
-            ctx.font = `${n.core ? '600' : '500'} ${n.core ? 12 : 10}px 'Inter', sans-serif`;
-            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-            const lines = n.label.split('\n'), lh = n.core ? 14 : 12;
-            const sy = n.y - ((lines.length - 1) * lh) / 2;
-            lines.forEach((ln, li) => ctx.fillText(ln, n.x, sy + li * lh));
+            // Pulse ring on hubs
+            if (n.hub && !REDUCE_MOTION) {
+                const pr = R + 5 + Math.sin(time * 1.8 + n.ci) * 2.5;
+                ctx.beginPath();
+                ctx.arc(n.x, n.y, pr, 0, Math.PI * 2);
+                ctx.strokeStyle = rgba(n.color, 0.16 * alpha);
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+
+            // Body — owned nodes are filled, learning nodes are hollow + dashed
+            ctx.save();
+            if (n.owned) {
+                ctx.beginPath();
+                ctx.arc(n.x, n.y, R, 0, Math.PI * 2);
+                ctx.fillStyle = rgba(n.color, (n.hub ? 0.2 : 0.14) * alpha + 0.02);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(n.x, n.y, R, 0, Math.PI * 2);
+                ctx.strokeStyle = rgba(n.color, (hov ? 0.95 : 0.55) * alpha);
+                ctx.lineWidth = hov ? 2 : 1.4;
+                ctx.stroke();
+            } else {
+                ctx.setLineDash([3, 3]);
+                ctx.beginPath();
+                ctx.arc(n.x, n.y, R, 0, Math.PI * 2);
+                ctx.strokeStyle = rgba(n.color, (hov ? 0.85 : 0.45) * alpha);
+                ctx.lineWidth = hov ? 1.8 : 1.2;
+                ctx.stroke();
+            }
+            ctx.restore();
+
+            // Label — inside for hubs, below for tools
+            ctx.textAlign = 'center';
+            if (n.hub) {
+                ctx.fillStyle = lit ? n.color : rgba(n.color, 0.4);
+                ctx.font = `600 12px 'Inter', sans-serif`;
+                ctx.textBaseline = 'middle';
+                ctx.fillText(n.label, n.x, n.y);
+            } else {
+                ctx.fillStyle = lit ? rgba(TEXT_HI, 0.88) : rgba(TEXT_LO, 0.35);
+                ctx.font = `500 10px 'Inter', sans-serif`;
+                ctx.textBaseline = 'top';
+                ctx.fillText(n.label, n.x, n.y + R + 5);
+            }
         });
 
-        // Tooltip on the hovered node.
-        if (hovering && nodes[hoverIdx].desc) {
-            const n = nodes[hoverIdx], txt = nodes[hoverIdx].desc;
+        // Tooltip
+        if (hovering && nodes[hoverIdx].sub) {
+            const n = nodes[hoverIdx];
+            const txt = n.sub;
             ctx.font = `500 11px 'JetBrains Mono', monospace`;
-            const bw = ctx.measureText(txt).width + 20, bh = 24;
-            let bx = n.x - bw / 2, by = n.y - n.r - bh - 10;
+            const bw = ctx.measureText(txt).width + 20;
+            const bh = 24;
+            let bx = n.x - bw / 2;
+            let by = n.y - n.r - bh - 12;
             bx = Math.max(6, Math.min(W - bw - 6, bx));
-            if (by < 6) by = n.y + n.r + 10;
-            ctx.fillStyle = 'rgba(15, 21, 32, 0.95)';
-            ctx.strokeStyle = 'rgba(51, 65, 85, 0.8)'; ctx.lineWidth = 1;
-            roundRect(ctx, bx, by, bw, bh, 6); ctx.fill(); ctx.stroke();
-            ctx.fillStyle = '#e2e8f0'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+            if (by < 6) by = n.y + n.r + 22;
+
+            ctx.fillStyle = rgba(PANEL_BG, 0.97);
+            ctx.strokeStyle = rgba(n.color, 0.5);
+            ctx.lineWidth = 1;
+            roundRect(ctx, bx, by, bw, bh, 6);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = TEXT_HI;
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
             ctx.fillText(txt, bx + 10, by + bh / 2);
         }
+    }
 
+    function frame() {
+        render();
         time += 0.016;
-        requestAnimationFrame(drawGraph);
+        requestAnimationFrame(frame);
     }
 
-    drawGraph();
+    // Sized last: render() closes over the token constants declared above it.
+    watchSize(canvas, resizeAll);
+    frame();
 }
 
-/* ========================================
-   Exploring Canvas (Abstract Illustration)
-   ======================================== */
-function initExploringCanvas() {
-    const canvas = document.getElementById('exploringCanvas');
-    if (!canvas) return;
+/* ==========================================================================
+   Journey — tabbed career path
+   ========================================================================== */
+function initJourney() {
+    const rail = document.getElementById('journeyRail');
+    if (!rail) return;
 
-    const ctx = canvas.getContext('2d');
-    const dpr = window.devicePixelRatio || 1;
+    const tabs = Array.from(rail.querySelectorAll('.stage'));
+    const panels = Array.from(document.querySelectorAll('.stage-panel'));
+    if (!tabs.length) return;
 
-    function resize() {
-        const rect = canvas.parentElement.getBoundingClientRect();
-        canvas.width = rect.width * dpr;
-        canvas.height = rect.height * dpr;
-        canvas.style.width = rect.width + 'px';
-        canvas.style.height = rect.height + 'px';
-        ctx.scale(dpr, dpr);
+    let userPicked = false;
+
+    function select(index, { focus = false } = {}) {
+        tabs.forEach((tab, i) => {
+            const on = i === index;
+            tab.classList.toggle('is-active', on);
+            tab.setAttribute('aria-selected', String(on));
+            tab.tabIndex = on ? 0 : -1;
+        });
+        panels.forEach((panel, i) => {
+            const on = i === index;
+            panel.classList.toggle('is-active', on);
+            panel.hidden = !on;
+        });
+        if (focus) tabs[index].focus();
+        if (Bus.focusCluster) Bus.focusCluster(tabs[index].dataset.cluster || null);
     }
 
-    resize();
-
-    let time = 0;
-
-    function draw() {
-        const w = canvas.width / dpr;
-        const h = canvas.height / dpr;
-        ctx.clearRect(0, 0, w, h);
-
-        const cx = w / 2;
-        const cy = h / 2;
-
-        // Draw concentric rings
-        for (let i = 0; i < 5; i++) {
-            const r = 12 + i * 10;
-            ctx.beginPath();
-            ctx.arc(cx, cy, r, 0, Math.PI * 2);
-            ctx.strokeStyle = `rgba(34, 211, 238, ${0.05 + i * 0.02})`;
-            ctx.lineWidth = 1;
-            ctx.stroke();
-        }
-
-        // Orbiting dots
-        for (let i = 0; i < 8; i++) {
-            const orbit = 15 + (i % 5) * 10;
-            const speed = 0.3 + i * 0.08;
-            const angle = time * speed + (i * Math.PI * 2) / 8;
-            const x = cx + Math.cos(angle) * orbit;
-            const y = cy + Math.sin(angle) * orbit;
-
-            const colors = ['#22d3ee', '#3b82f6', '#a78bfa', '#34d399', '#fbbf24', '#f472b6', '#fb923c', '#f87171'];
-            const color = colors[i % colors.length];
-            const r = parseInt(color.slice(1, 3), 16);
-            const g = parseInt(color.slice(3, 5), 16);
-            const b = parseInt(color.slice(5, 7), 16);
-
-            ctx.beginPath();
-            ctx.arc(x, y, 2.5, 0, Math.PI * 2);
-            ctx.fillStyle = `rgba(${r}, ${g}, ${b}, 0.8)`;
-            ctx.fill();
-
-            // Glow
-            const glow = ctx.createRadialGradient(x, y, 0, x, y, 6);
-            glow.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0.2)`);
-            glow.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
-            ctx.beginPath();
-            ctx.arc(x, y, 6, 0, Math.PI * 2);
-            ctx.fillStyle = glow;
-            ctx.fill();
-        }
-
-        // Center dot
-        ctx.beginPath();
-        ctx.arc(cx, cy, 3, 0, Math.PI * 2);
-        ctx.fillStyle = '#22d3ee';
-        ctx.fill();
-
-        time += 0.02;
-        requestAnimationFrame(draw);
-    }
-
-    draw();
-}
-
-/* ========================================
-   Scroll-Based Animations
-   ======================================== */
-function initScrollAnimations() {
-    const observerOptions = {
-        threshold: 0.1,
-        rootMargin: '0px 0px -50px 0px'
-    };
-
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.classList.add('in-view');
-                // Stagger children animations
-                const children = entry.target.querySelectorAll('.skill-card, .exploration-item, .model-item, .tech-icon-item, .stat-item, .journal-entry');
-                children.forEach((child, i) => {
-                    child.style.animationDelay = `${i * 0.05}s`;
-                    child.classList.add('in-view');
-                });
-            }
+    tabs.forEach((tab, i) => {
+        tab.addEventListener('click', () => {
+            userPicked = true;
+            select(i);
         });
-    }, observerOptions);
-
-    document.querySelectorAll('.what-i-do, .explorations-section, .models-tech-section, .bottom-sections, .stats-bar, .footer').forEach(section => {
-        observer.observe(section);
-    });
-}
-
-/* ========================================
-   Navigation Functionality
-   ======================================== */
-function initNavigation() {
-    const navbar = document.getElementById('navbar');
-    const mobileToggle = document.getElementById('mobileToggle');
-    const navLinks = document.querySelector('.nav-links');
-
-    // Scroll effect
-    let lastScroll = 0;
-    window.addEventListener('scroll', () => {
-        const currentScroll = window.scrollY;
-
-        if (currentScroll > 60) {
-            navbar.style.background = 'rgba(10, 14, 23, 0.95)';
-        } else {
-            navbar.style.background = 'rgba(10, 14, 23, 0.85)';
-        }
-
-        lastScroll = currentScroll;
-    });
-
-    // Mobile toggle
-    if (mobileToggle) {
-        mobileToggle.addEventListener('click', () => {
-            navLinks.classList.toggle('mobile-open');
-            mobileToggle.classList.toggle('active');
-        });
-    }
-
-    // Active link tracking
-    const sections = document.querySelectorAll('section[id], footer[id]');
-    const links = document.querySelectorAll('.nav-link');
-
-    window.addEventListener('scroll', () => {
-        let current = '';
-        sections.forEach(section => {
-            const sectionTop = section.offsetTop - 100;
-            if (window.scrollY >= sectionTop) {
-                current = section.getAttribute('id');
-            }
-        });
-
-        links.forEach(link => {
-            link.classList.remove('active');
-            if (link.getAttribute('href') === '#' + current) {
-                link.classList.add('active');
-            }
-        });
-    });
-
-    // Smooth scroll for nav links
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-        anchor.addEventListener('click', function (e) {
+        tab.addEventListener('keydown', (e) => {
+            let next = null;
+            if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next = (i + 1) % tabs.length;
+            else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') next = (i - 1 + tabs.length) % tabs.length;
+            else if (e.key === 'Home') next = 0;
+            else if (e.key === 'End') next = tabs.length - 1;
+            if (next === null) return;
             e.preventDefault();
-            const target = document.querySelector(this.getAttribute('href'));
-            if (target) {
-                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
+            userPicked = true;
+            select(next, { focus: true });
         });
     });
+
+    // Gentle auto-advance as the section scrolls past — a click always wins.
+    if (!REDUCE_MOTION && 'IntersectionObserver' in window) {
+        const section = document.getElementById('journey');
+        let auto = 0;
+        let timer = null;
+
+        const io = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting && !userPicked && !timer) {
+                    timer = setInterval(() => {
+                        if (userPicked) { clearInterval(timer); timer = null; return; }
+                        auto = (auto + 1) % tabs.length;
+                        select(auto);
+                    }, 4200);
+                } else if (!entry.isIntersecting && timer) {
+                    clearInterval(timer);
+                    timer = null;
+                }
+            });
+        }, { threshold: 0.45 });
+
+        if (section) io.observe(section);
+    }
 }
 
-/* ========================================
-   Typing Effect for Terminal
-   ======================================== */
-function initTypingEffect() {
-    const terminalText = document.querySelector('.terminal-text');
-    if (!terminalText) return;
+/* ==========================================================================
+   Scroll reveal
+   ========================================================================== */
+function initScrollReveal() {
+    const targets = document.querySelectorAll(
+        '.stats-bar, .section-head, .rail-wrap, .stage-panels, .exp-item, ' +
+        '.credentials, .skills-grid, .proj-card, .footer-links, .footer-title'
+    );
+    targets.forEach(el => el.classList.add('reveal'));
 
-    // Phrases the terminal cycles through, type/erase loop.
-    const phrases = [
-        ' building in public, learning in public.',
-        ' turning data into decisions.',
-        ' shipping systems that compound.',
-        ' exploring AI × markets × engineering.',
-        ' from messy data to clear signal.',
-        ' always learning. always building.'
-    ];
-
-    // Respect reduced-motion: show the first phrase statically.
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-        terminalText.textContent = phrases[0];
+    if (!('IntersectionObserver' in window)) {
+        targets.forEach(el => el.classList.add('in-view'));
         return;
     }
 
-    terminalText.textContent = '';
-    let phraseIndex = 0;
-    let charIndex = 0;
-    let deleting = false;
+    const io = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (!entry.isIntersecting) return;
+            entry.target.classList.add('in-view');
+            io.unobserve(entry.target);
+        });
+    }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+
+    targets.forEach((el, i) => {
+        el.style.transitionDelay = `${Math.min(i % 6, 5) * 55}ms`;
+        io.observe(el);
+    });
+}
+
+/* ==========================================================================
+   Navigation
+   ========================================================================== */
+function initNavigation() {
+    const navbar = document.getElementById('navbar');
+    const toggle = document.getElementById('mobileToggle');
+    const links = document.getElementById('navLinks');
+
+    if (navbar) {
+        const onScroll = () => navbar.classList.toggle('is-scrolled', window.scrollY > 20);
+        window.addEventListener('scroll', onScroll, { passive: true });
+        onScroll();
+    }
+
+    if (toggle && links) {
+        toggle.addEventListener('click', () => {
+            const open = links.classList.toggle('mobile-open');
+            toggle.classList.toggle('active', open);
+            toggle.setAttribute('aria-expanded', String(open));
+        });
+        links.querySelectorAll('a').forEach(a => {
+            a.addEventListener('click', () => {
+                links.classList.remove('mobile-open');
+                toggle.classList.remove('active');
+                toggle.setAttribute('aria-expanded', 'false');
+            });
+        });
+    }
+
+    // Scrollspy
+    const sections = Array.from(document.querySelectorAll('section[id], footer[id]'));
+    const navLinks = Array.from(document.querySelectorAll('.nav-link'));
+
+    if (sections.length && navLinks.length) {
+        const spy = () => {
+            const y = window.scrollY + 140;
+            let current = '';
+            sections.forEach(s => { if (y >= s.offsetTop) current = s.id; });
+            navLinks.forEach(l => {
+                l.classList.toggle('active', l.getAttribute('href') === '#' + current);
+            });
+        };
+        window.addEventListener('scroll', spy, { passive: true });
+        spy();
+    }
+}
+
+/* ==========================================================================
+   Hero terminal typing loop
+   ========================================================================== */
+function initTypingEffect() {
+    const el = document.querySelector('.terminal-text');
+    if (!el) return;
+
+    const phrases = [
+        ' turning data into decisions.',
+        ' three internships, all analytics.',
+        ' python, sql, power bi, tableau.',
+        ' shipping full-stack with fastapi.',
+        ' step one of five. heading to AI.'
+    ];
+
+    if (REDUCE_MOTION) {
+        el.textContent = phrases[0];
+        return;
+    }
+
+    el.textContent = '';
+    let pi = 0, ci = 0, deleting = false;
 
     function tick() {
-        const current = phrases[phraseIndex];
-
+        const current = phrases[pi];
         if (!deleting) {
-            charIndex++;
-            terminalText.textContent = current.slice(0, charIndex);
-            if (charIndex === current.length) {
+            ci++;
+            el.textContent = current.slice(0, ci);
+            if (ci === current.length) {
                 deleting = true;
-                return setTimeout(tick, 2200); // hold the full phrase
+                return setTimeout(tick, 2400);
             }
             setTimeout(tick, 45 + Math.random() * 35);
         } else {
-            charIndex--;
-            terminalText.textContent = current.slice(0, charIndex);
-            if (charIndex === 0) {
+            ci--;
+            el.textContent = current.slice(0, ci);
+            if (ci === 0) {
                 deleting = false;
-                phraseIndex = (phraseIndex + 1) % phrases.length;
-                return setTimeout(tick, 450); // pause before next phrase
+                pi = (pi + 1) % phrases.length;
+                return setTimeout(tick, 420);
             }
-            setTimeout(tick, 25 + Math.random() * 20);
+            setTimeout(tick, 24 + Math.random() * 18);
         }
     }
 
-    // Start after the hero entrance animation settles.
-    setTimeout(tick, 1500);
+    setTimeout(tick, 1400);
 }
 
-/* ========================================
-   Counter Animation for Stats
-   ======================================== */
+/* ==========================================================================
+   Stat counters
+   ========================================================================== */
 function animateCounters() {
-    const statValues = document.querySelectorAll('.stat-value');
+    const values = document.querySelectorAll('.stat-value');
+    if (!values.length || !('IntersectionObserver' in window)) return;
 
-    const observer = new IntersectionObserver((entries) => {
+    const io = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                const el = entry.target;
-                const text = el.textContent;
+            if (!entry.isIntersecting) return;
+            const el = entry.target;
+            const text = el.textContent.trim();
+            const match = text.match(/^(\d+)(\+|K\+)?$/);
+            io.unobserve(el);
+            if (!match) return;
 
-                // Only animate numeric values
-                const match = text.match(/^(\d+)(\+|K\+)?$/);
-                if (match) {
-                    const target = parseInt(match[1]);
-                    const suffix = match[2] || '';
-                    let current = 0;
-                    const duration = 1500;
-                    const startTime = performance.now();
+            if (REDUCE_MOTION) return;
 
-                    function update(currentTime) {
-                        const elapsed = currentTime - startTime;
-                        const progress = Math.min(elapsed / duration, 1);
+            const target = parseInt(match[1], 10);
+            const suffix = match[2] || '';
+            const duration = 1200;
+            const start = performance.now();
 
-                        // Ease out cubic
-                        const eased = 1 - Math.pow(1 - progress, 3);
-                        current = Math.floor(eased * target);
-
-                        el.textContent = current + suffix;
-
-                        if (progress < 1) {
-                            requestAnimationFrame(update);
-                        } else {
-                            el.textContent = text;
-                        }
-                    }
-
-                    requestAnimationFrame(update);
-                }
-
-                observer.unobserve(el);
+            function update(now) {
+                const p = Math.min((now - start) / duration, 1);
+                const eased = 1 - Math.pow(1 - p, 3);
+                el.textContent = Math.floor(eased * target) + suffix;
+                if (p < 1) requestAnimationFrame(update);
+                else el.textContent = text;
             }
+            requestAnimationFrame(update);
         });
     }, { threshold: 0.5 });
 
-    statValues.forEach(el => observer.observe(el));
+    values.forEach(el => io.observe(el));
 }
 
-// Initialize counters
-document.addEventListener('DOMContentLoaded', animateCounters);
+/* ==========================================================================
+   Smooth in-page scrolling
+   ========================================================================== */
+function initSmoothScroll() {
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            const href = this.getAttribute('href');
+            if (!href || href === '#') return;
+            const target = document.querySelector(href);
+            if (!target) return;
+            e.preventDefault();
+            target.scrollIntoView({
+                behavior: REDUCE_MOTION ? 'auto' : 'smooth',
+                block: 'start'
+            });
+        });
+    });
+}
 
-/* ========================================
-   Mobile Menu Styles (injected)
-   ======================================== */
-const mobileStyles = document.createElement('style');
-mobileStyles.textContent = `
-    @media (max-width: 768px) {
-        .nav-links.mobile-open {
-            display: flex;
-            flex-direction: column;
-            position: absolute;
-            top: 56px;
-            left: 0;
-            right: 0;
-            background: rgba(10, 14, 23, 0.98);
-            backdrop-filter: blur(20px);
-            padding: 20px 24px;
-            border-bottom: 1px solid var(--border-color);
-            gap: 16px;
-        }
-
-        .nav-links.mobile-open .nav-link {
-            font-size: 0.85rem;
-            padding: 8px 0;
-        }
-
-        .mobile-toggle.active span:nth-child(1) {
-            transform: rotate(45deg) translate(4px, 4px);
-        }
-        .mobile-toggle.active span:nth-child(2) {
-            opacity: 0;
-        }
-        .mobile-toggle.active span:nth-child(3) {
-            transform: rotate(-45deg) translate(4px, -4px);
-        }
-    }
-`;
-document.head.appendChild(mobileStyles);
+/* ==========================================================================
+   Boot
+   ========================================================================== */
+document.addEventListener('DOMContentLoaded', () => {
+    initNavigation();
+    initSmoothScroll();
+    initScrollReveal();
+    initTypingEffect();
+    animateCounters();
+    initSpiralCanvas();
+    initSkillsConstellation();
+    initJourney();
+});
