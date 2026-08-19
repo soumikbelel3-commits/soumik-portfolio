@@ -16,11 +16,15 @@
     --line-strong:   rgba(255, 255, 255, 0.12);
     --line-accent:   rgba(34, 211, 238, 0.35);
 
-    /* Text — neutral zinc */
-    --text-hi:   #F4F4F5;
-    --text-mid:  #A1A1AA;
-    --text-lo:   #71717A;
-    --text-dim:  #52525B;
+    /* Text — neutral zinc. Ratios below are worst-case, measured against the
+       LIGHTEST surface in the system (--bg-card-hover), not the page background,
+       because most small text sits inside a card. All three pass WCAG AA. */
+    --text-hi:   #F4F4F5;   /* 17.15 — titles, values, names        */
+    --text-mid:  #A1A1AA;   /*  7.36 — body prose                   */
+    --text-lo:   #8B8B95;   /*  5.30 — labels, meta, tags, captions */
+    --text-dim:  #52525B;   /*  2.44 — ORNAMENT ONLY. Never on text
+                               a reader has to read. Kept only so a
+                               stray var() still resolves. */
 
     /* Accent — electric cyan, dominant */
     --cy:        #22D3EE;
@@ -35,6 +39,30 @@
     --hue-3: #34D399;  /* Data Engineer       */
     --hue-4: #FBBF24;  /* Big Data Specialist */
     --hue-5: #F472B6;  /* AI Engineer         */
+
+    /* Type scale — 16px root. 12px is the floor; there is deliberately no 11px
+       step, because an unused escape hatch will get used. */
+    --fs-3xs:  0.75rem;    /* 12px  labels, meta, tags — the floor        */
+    --fs-2xs:  0.8125rem;  /* 13px  eyebrows, mono meta with weight        */
+    --fs-xs:   0.875rem;   /* 14px  small UI text, buttons, card body      */
+    --fs-sm:   0.9375rem;  /* 15px  dense sans: names, orgs, descriptions  */
+    --fs-md:   1rem;       /* 16px  body prose                             */
+    --fs-lg:   1.125rem;   /* 18px  lede paragraphs, card headings         */
+    --fs-xl:   1.375rem;   /* 22px  sub-headings, logo, job titles         */
+    --fs-2xl:  1.625rem;   /* 26px  panel headings                         */
+    --fs-3xl:  2rem;       /* 32px  stat numerals                          */
+    --fs-title: clamp(1.9rem, 3.9vw, 2.9rem);
+    --fs-hero:  clamp(2.4rem, 5.4vw, 4.15rem);
+
+    /* Spacing scale. Section padding, card insets and gaps >=12px come from
+       here. Anything smaller, and a control's own internal padding, stays a
+       raw pixel value — those are optical, not systemic. */
+    --sp-1: 4px;   --sp-2: 8px;   --sp-3: 12px;
+    --sp-4: 16px;  --sp-5: 24px;  --sp-6: 32px;
+    --sp-7: 48px;  --sp-8: 64px;  --sp-9: 96px;
+    --sp-section: var(--sp-9);
+    --sp-card:    var(--sp-5);
+    --sp-gutter:  var(--sp-5);
 
     --font-mono:    'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
     --font-sans:    'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -106,7 +134,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .skip-link {
     position: absolute; top: -60px; left: 16px; z-index: 2000;
     padding: 10px 18px; background: var(--cy); color: #04141a;
-    font-family: var(--font-mono); font-size: 0.78rem; font-weight: 600;
+    font-family: var(--font-mono); font-size: var(--fs-2xs); font-weight: 600;
     border-radius: var(--radius-sm);
     transition: top var(--t-fast);
 }
@@ -179,8 +207,10 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     to   { transform: translate3d(-70px, 40px, 0) scale(1); }
 }
 
-/* Everything above the ambient layers */
-.navbar, main { position: relative; z-index: 1; }
+/* Everything above the ambient layers. .footer is listed explicitly because it
+   is a sibling of <main>, not a child — without this the fixed grain/aurora
+   layers paint over the contact section. */
+.navbar, main, .footer { position: relative; z-index: 1; }
 
 /* ==========================================================================
    Shared layout & type
@@ -191,18 +221,49 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     padding: 0 24px;
 }
 
-.eyebrow {
-    display: inline-block;
+/* ==========================================================================
+   Micro-type components
+   Two treatments, not one. .label is UPPERCASE and belongs on chrome; .meta is
+   sentence case and belongs on content (dates, issuers, place names). Folding
+   them together would render "Google" and "Kolkata, West Bengal" in caps.
+   ========================================================================== */
+
+/* Mono, uppercase, tracked. One spec, fourteen call sites. */
+.label,
+.eyebrow, .panel-label, .evidence-label, .panel-side-label, .cred-label,
+.stack-label, .stat-label, .hero-social-label, .stage-state, .proj-kind,
+.constellation-reset, .legend-item, .snapshot-row dt, .chip {
     font-family: var(--font-mono);
-    font-size: 0.7rem;
+    font-size: var(--fs-3xs);   /* 12px — was 9.9–11.2px */
     font-weight: 500;
-    letter-spacing: 0.16em;
+    line-height: 1.35;
+    letter-spacing: 0.10em;     /* was 0.16em — at 12px, tracking costs more
+                                   legibility than the size increase buys */
     text-transform: uppercase;
-    color: var(--cy);
-    margin-bottom: 14px;
+    color: var(--text-lo);
+}
+.label--accent { color: var(--cy); }
+.label--block  { display: block; margin-bottom: var(--sp-3); }
+
+/* Mono, sentence case. Dates, issuers, counts, captions, place names. */
+.meta,
+.profile-tagline, .ev-date, .cred-meta, .cert-issuer, .exp-period,
+.graph-caption, .footer-bottom, .proj-stage, .stage-num {
+    font-family: var(--font-mono);
+    font-size: var(--fs-3xs);
+    letter-spacing: 0.02em;
+    color: var(--text-lo);
 }
 
-.section-head { margin-bottom: 52px; max-width: 720px; }
+.eyebrow {
+    display: inline-block;
+    font-size: var(--fs-2xs);
+    letter-spacing: 0.09em;
+    color: var(--cy);
+    margin-bottom: var(--sp-3);
+}
+
+.section-head { margin-bottom: var(--sp-7); max-width: 720px; }
 
 .section-head-row {
     max-width: none;
@@ -215,7 +276,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 
 .section-title {
     font-family: var(--font-display);
-    font-size: clamp(1.9rem, 3.6vw, 2.85rem);
+    font-size: var(--fs-title);
     font-weight: 700;
     line-height: 1.12;
     letter-spacing: -0.032em;
@@ -224,7 +285,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 
 .section-lede {
     margin-top: 18px;
-    font-size: 1.02rem;
+    font-size: var(--fs-lg);
     line-height: 1.7;
     color: var(--text-mid);
     max-width: 62ch;
@@ -235,7 +296,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     align-items: center;
     gap: 9px;
     font-family: var(--font-mono);
-    font-size: 0.78rem;
+    font-size: var(--fs-2xs);
     letter-spacing: 0.04em;
     color: var(--text-mid);
     padding-bottom: 4px;
@@ -276,8 +337,12 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 }
 
 .nav-logo {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding-inline: 4px;
     font-family: var(--font-display);
-    font-size: 1.35rem;
+    font-size: var(--fs-xl);
     font-weight: 700;
     letter-spacing: -0.03em;
     color: var(--text-hi);
@@ -288,7 +353,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 
 .nav-link {
     position: relative;
-    font-size: 0.86rem;
+    font-size: var(--fs-xs);
     font-weight: 450;
     color: var(--text-mid);
     padding: 7px 13px;
@@ -310,7 +375,8 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    font-size: 0.82rem;
+    min-height: 44px;
+    font-size: var(--fs-2xs);
     font-weight: 500;
     color: var(--text-hi);
     padding: 8px 16px;
@@ -366,7 +432,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     flex-wrap: wrap;
     gap: 10px;
     font-family: var(--font-mono);
-    font-size: 0.72rem;
+    font-size: var(--fs-3xs);
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--text-lo);
@@ -383,7 +449,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     color: #6EE7B7;
     letter-spacing: 0.06em;
     text-transform: none;
-    font-size: 0.72rem;
+    font-size: var(--fs-3xs);
 }
 .tag-live i {
     width: 6px; height: 6px;
@@ -397,7 +463,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 
 .hero-title {
     font-family: var(--font-display);
-    font-size: clamp(2.4rem, 5.4vw, 4.15rem);
+    font-size: var(--fs-hero);
     font-weight: 700;
     line-height: 1.06;
     letter-spacing: -0.038em;
@@ -420,7 +486,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 }
 
 .hero-subtitle {
-    font-size: 1.06rem;
+    font-size: var(--fs-lg);
     line-height: 1.72;
     color: var(--text-mid);
     max-width: 56ch;
@@ -435,7 +501,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     gap: 9px;
     padding: 12px 22px;
     border-radius: 99px;
-    font-size: 0.9rem;
+    font-size: var(--fs-xs);
     font-weight: 500;
     transition: transform var(--t-fast), background var(--t-fast),
                 border-color var(--t-fast), color var(--t-fast), box-shadow var(--t-fast);
@@ -473,7 +539,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     flex-wrap: wrap;
     gap: 2px;
     font-family: var(--font-mono);
-    font-size: 0.82rem;
+    font-size: var(--fs-2xs);
     padding: 13px 16px;
     background: rgba(0, 0, 0, 0.4);
     border: 1px solid var(--line);
@@ -489,20 +555,15 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 
 .hero-social { display: flex; align-items: center; gap: 12px; }
 .hero-social-label {
-    font-family: var(--font-mono);
-    font-size: 0.68rem;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    color: var(--text-dim);
-    margin-right: 4px;
+    margin-right: var(--sp-1);
 }
 .hero-social-link {
     display: grid;
     place-items: center;
-    width: 36px; height: 36px;
+    width: 44px; height: 44px;
     border: 1px solid var(--line);
     border-radius: var(--radius-sm);
-    color: var(--text-lo);
+    color: var(--text-mid);
     transition: color var(--t-fast), border-color var(--t-fast),
                 background var(--t-fast), transform var(--t-fast);
 }
@@ -549,15 +610,13 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .profile-card-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .profile-name {
     font-family: var(--font-display);
-    font-size: 0.95rem;
+    font-size: var(--fs-sm);
     font-weight: 600;
     letter-spacing: -0.01em;
     color: var(--text-hi);
 }
 .profile-tagline {
-    font-family: var(--font-mono);
-    font-size: 0.68rem;
-    color: var(--text-dim);
+    color: var(--text-lo);
 }
 
 .panel {
@@ -571,13 +630,8 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 12px 16px;
+    padding: var(--sp-3) var(--sp-4);
     border-bottom: 1px solid var(--line);
-    font-family: var(--font-mono);
-    font-size: 0.66rem;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    color: var(--text-lo);
 }
 .panel-dot {
     width: 6px; height: 6px;
@@ -596,15 +650,11 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     justify-content: space-between;
     gap: 12px;
     padding: 9px 16px;
-    font-size: 0.78rem;
+    font-size: var(--fs-2xs);
 }
 .snapshot-row + .snapshot-row { border-top: 1px solid var(--line); }
 .snapshot-row dt {
-    font-family: var(--font-mono);
-    font-size: 0.66rem;
     letter-spacing: 0.09em;
-    text-transform: uppercase;
-    color: var(--text-dim);
     flex-shrink: 0;
 }
 .snapshot-row dd { color: var(--text-mid); text-align: right; }
@@ -623,11 +673,11 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     max-width: var(--container);
     margin: 0 auto;
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(4, 1fr);
 }
 
 .stat-item {
-    padding: 30px 24px;
+    padding: var(--sp-6) var(--sp-5);
     display: flex;
     flex-direction: column;
     gap: 3px;
@@ -636,26 +686,21 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 
 .stat-value {
     font-family: var(--font-display);
-    font-size: 2rem;
+    font-size: var(--fs-3xl);
     font-weight: 700;
     letter-spacing: -0.03em;
     color: var(--text-hi);
     line-height: 1.1;
 }
-.stat-flag { font-size: 1.7rem; }
 .stat-label {
-    font-family: var(--font-mono);
-    font-size: 0.68rem;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
     color: var(--cy);
 }
-.stat-desc { font-size: 0.78rem; color: var(--text-dim); }
+.stat-desc { font-size: var(--fs-2xs); color: var(--text-lo); }
 
 /* ==========================================================================
    Journey — the career path
    ========================================================================== */
-.journey { padding: 104px 0 96px; }
+.journey { padding: var(--sp-section) 0; }
 
 .rail-wrap { margin-bottom: 40px; }
 
@@ -724,15 +769,11 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .stage.is-active[data-state="current"] .stage-dot { background: var(--cy); }
 
 .stage-num {
-    font-family: var(--font-mono);
-    font-size: 0.66rem;
-    letter-spacing: 0.1em;
-    color: var(--text-dim);
     transition: color var(--t-fast);
 }
 .stage-name {
     font-family: var(--font-display);
-    font-size: 0.94rem;
+    font-size: var(--fs-sm);
     font-weight: 600;
     letter-spacing: -0.015em;
     color: var(--text-lo);
@@ -740,11 +781,6 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     transition: color var(--t-fast);
 }
 .stage-state {
-    font-family: var(--font-mono);
-    font-size: 0.62rem;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--text-dim);
     transition: color var(--t-fast);
 }
 
@@ -776,7 +812,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     to   { opacity: 1; transform: none; }
 }
 
-.panel-main { padding: 34px 36px; }
+.panel-main { padding: var(--sp-6); }
 
 .panel-head {
     display: flex;
@@ -787,7 +823,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 }
 .panel-num {
     font-family: var(--font-mono);
-    font-size: 0.8rem;
+    font-size: var(--fs-2xs);
     letter-spacing: 0.1em;
     color: var(--cy);
     padding: 3px 9px;
@@ -797,21 +833,16 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 }
 .panel-head h3 {
     font-family: var(--font-display);
-    font-size: 1.62rem;
+    font-size: var(--fs-2xl);
     font-weight: 700;
     letter-spacing: -0.028em;
     color: var(--text-hi);
 }
 
 .chip {
-    font-family: var(--font-mono);
-    font-size: 0.65rem;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
     padding: 4px 10px;
     border-radius: 99px;
     border: 1px solid var(--line-strong);
-    color: var(--text-lo);
 }
 .chip-current {
     color: #6EE7B7;
@@ -831,7 +862,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 
 .panel-thesis {
     font-family: var(--font-display);
-    font-size: 1.12rem;
+    font-size: var(--fs-lg);
     font-weight: 500;
     line-height: 1.5;
     letter-spacing: -0.015em;
@@ -842,7 +873,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 }
 
 .panel-body {
-    font-size: 0.98rem;
+    font-size: var(--fs-md);
     line-height: 1.75;
     color: var(--text-mid);
     max-width: 62ch;
@@ -851,12 +882,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .panel-evidence { margin-top: 26px; }
 .evidence-label {
     display: block;
-    font-family: var(--font-mono);
-    font-size: 0.66rem;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    color: var(--text-dim);
-    margin-bottom: 12px;
+    margin-bottom: var(--sp-3);
 }
 
 .evidence-list { display: flex; flex-direction: column; gap: 1px; }
@@ -869,12 +895,12 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     border: 1px solid var(--line);
     border-radius: var(--radius-sm);
 }
-.ev-role { font-size: 0.88rem; font-weight: 500; color: var(--text-hi); }
-.ev-org  { font-size: 0.8rem; color: var(--text-lo); grid-column: 1; }
+.ev-role { font-size: var(--fs-xs); font-weight: 500; color: var(--text-hi); }
+.ev-org  { font-size: var(--fs-2xs); color: var(--text-mid); grid-column: 1; }
 .ev-date {
     font-family: var(--font-mono);
-    font-size: 0.7rem;
-    color: var(--text-dim);
+    font-size: var(--fs-3xs);
+    color: var(--text-lo);
     grid-row: 1 / span 2;
     grid-column: 2;
     align-self: center;
@@ -884,25 +910,20 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .evidence-compact .ev-org { grid-column: 1; }
 
 .panel-side {
-    padding: 34px 28px;
+    padding: var(--sp-6) var(--sp-5);
     border-left: 1px solid var(--line);
     background: rgba(255, 255, 255, 0.018);
 }
 .panel-side-label {
     display: block;
-    font-family: var(--font-mono);
-    font-size: 0.66rem;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    color: var(--text-dim);
-    margin-bottom: 14px;
+    margin-bottom: var(--sp-3);
 }
 
 .chips { display: flex; flex-wrap: wrap; gap: 7px; }
 
 .chip-tool {
     font-family: var(--font-mono);
-    font-size: 0.74rem;
+    font-size: var(--fs-3xs);
     padding: 5px 11px;
     border-radius: var(--radius-sm);
     border: 1px solid var(--line);
@@ -926,7 +947,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 /* ==========================================================================
    Experience
    ========================================================================== */
-.experience { padding: 96px 0; border-top: 1px solid var(--line); }
+.experience { padding: var(--sp-section) 0; border-top: 1px solid var(--line); }
 
 .exp-list {
     display: flex;
@@ -967,36 +988,69 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 }
 .exp-role {
     font-family: var(--font-display);
-    font-size: 1.2rem;
+    font-size: var(--fs-xl);
     font-weight: 600;
     letter-spacing: -0.02em;
     color: var(--text-hi);
 }
 .exp-period {
-    font-family: var(--font-mono);
-    font-size: 0.72rem;
     letter-spacing: 0.06em;
     color: var(--cy);
     white-space: nowrap;
 }
-.exp-org { font-size: 0.92rem; color: var(--text-mid); margin-top: 3px; }
-.exp-mode { color: var(--text-dim); }
-.exp-desc {
-    margin-top: 10px;
-    font-size: 0.95rem;
-    line-height: 1.7;
-    color: var(--text-mid);
-    max-width: 68ch;
-}
+.exp-org { font-size: var(--fs-sm); color: var(--text-mid); margin-top: 3px; }
+.exp-mode { color: var(--text-mid); }
 .exp-tags { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 14px; }
 .exp-tags span {
     font-family: var(--font-mono);
-    font-size: 0.7rem;
+    font-size: var(--fs-3xs);
     padding: 4px 10px;
     border: 1px solid var(--line);
     border-radius: var(--radius-sm);
     color: var(--text-lo);
 }
+
+/* Two bullets per role, straight from the resume. */
+.exp-points { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; max-width: 68ch; }
+.exp-points li {
+    position: relative;
+    padding-left: 18px;
+    font-size: var(--fs-sm);
+    line-height: 1.7;
+    color: var(--text-mid);
+}
+.exp-points li::before {
+    content: '';
+    position: absolute;
+    left: 3px; top: 0.66em;
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--text-lo);
+}
+
+/* Only one internship is still running — say so, and quiet the finished ones. */
+.exp-state {
+    font-family: var(--font-mono);
+    font-size: var(--fs-3xs);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-lo);
+    padding: 2px 8px;
+    border: 1px solid var(--line);
+    border-radius: 99px;
+    white-space: nowrap;
+}
+.exp-state.is-current {
+    color: #6EE7B7;
+    border-color: rgba(52, 211, 153, 0.3);
+    background: rgba(52, 211, 153, 0.09);
+}
+.exp-item[data-state="done"] .exp-marker span {
+    background: var(--bg-base);
+    border: 1.5px solid var(--line-strong);
+    box-shadow: none;
+}
+.exp-item[data-state="done"] .exp-period { color: var(--text-lo); }
 
 /* --- Credentials --- */
 .credentials {
@@ -1009,34 +1063,27 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 
 .cred-label {
     display: block;
-    font-family: var(--font-mono);
-    font-size: 0.66rem;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
     color: var(--cy);
-    margin-bottom: 14px;
+    margin-bottom: var(--sp-3);
 }
 .cred-label-spaced { margin-top: 26px; }
 
 .cred-card {
-    padding: 20px;
+    padding: var(--sp-card);
     background: var(--bg-card);
     border: 1px solid var(--line);
     border-radius: var(--radius-lg);
 }
 .cred-card h4 {
     font-family: var(--font-display);
-    font-size: 1.05rem;
+    font-size: var(--fs-lg);
     font-weight: 600;
     letter-spacing: -0.02em;
     color: var(--text-hi);
     margin-bottom: 5px;
 }
-.cred-org { font-size: 0.88rem; color: var(--text-mid); }
+.cred-org { font-size: var(--fs-xs); color: var(--text-mid); }
 .cred-meta {
-    font-family: var(--font-mono);
-    font-size: 0.72rem;
-    color: var(--text-dim);
     margin-top: 6px;
 }
 
@@ -1053,18 +1100,15 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     transition: border-color var(--t-fast);
 }
 .cert-list li:hover { border-color: var(--line-strong); }
-.cert-name { font-size: 0.85rem; color: var(--text-hi); }
+.cert-name { font-size: var(--fs-xs); color: var(--text-hi); }
 .cert-issuer {
-    font-family: var(--font-mono);
-    font-size: 0.68rem;
-    color: var(--text-dim);
     white-space: nowrap;
 }
 
 .lang-list { display: flex; flex-wrap: wrap; gap: 7px; }
 .lang-list span {
     font-family: var(--font-mono);
-    font-size: 0.74rem;
+    font-size: var(--fs-3xs);
     padding: 5px 11px;
     border: 1px solid var(--line);
     border-radius: var(--radius-sm);
@@ -1080,7 +1124,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     border-radius: 99px;
     background: var(--cy-soft);
     color: var(--cy);
-    font-size: 0.86rem;
+    font-size: var(--fs-xs);
     font-weight: 500;
     transition: background var(--t-fast), transform var(--t-fast);
 }
@@ -1089,12 +1133,12 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 /* ==========================================================================
    Skills / constellation
    ========================================================================== */
-.skills { padding: 96px 0; border-top: 1px solid var(--line); }
+.skills { padding: var(--sp-section) 0; border-top: 1px solid var(--line); }
 
 .skills-grid {
     display: grid;
-    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
-    gap: 28px;
+    grid-template-columns: 1fr;
+    gap: var(--sp-5);
     align-items: start;
 }
 
@@ -1118,11 +1162,8 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .legend-item {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    font-family: var(--font-mono);
-    font-size: 0.68rem;
+    gap: var(--sp-2);
     letter-spacing: 0.06em;
-    color: var(--text-lo);
 }
 .legend-item i {
     width: 10px; height: 10px;
@@ -1133,52 +1174,51 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .legend-hollow { border: 1.5px dashed rgba(255, 255, 255, 0.4); }
 
 .constellation-reset {
-    font-family: var(--font-mono);
-    font-size: 0.68rem;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--text-dim);
+    position: relative;
     padding: 5px 11px;
     border: 1px solid var(--line);
     border-radius: var(--radius-sm);
     transition: color var(--t-fast), border-color var(--t-fast);
 }
+/* Grow the hit area to 44px without growing the visual box — a taller button
+   would dominate .constellation-head. The expansion stays inside its padding. */
+.constellation-reset::after { content: ''; position: absolute; inset: -8px -6px; }
 .constellation-reset:hover { color: var(--cy); border-color: var(--line-accent); }
 
-.graph-container { height: 460px; padding: 6px; }
+.graph-container { height: 380px; padding: 6px; }
 .graph-container canvas { width: 100%; height: 100%; }
 
 .graph-caption {
-    padding: 12px 18px;
+    padding: var(--sp-3) 18px;
     border-top: 1px solid var(--line);
-    font-family: var(--font-mono);
-    font-size: 0.7rem;
-    color: var(--text-dim);
 }
 
-.stack-lists { display: flex; flex-direction: column; gap: 24px; }
+/* Six groups now (five resume categories + what's being learned), so they get
+   their own grid rather than a single tall column beside the canvas. */
+.stack-lists {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--sp-4);
+    align-items: start;
+}
 
 .stack-group {
-    padding: 22px;
+    padding: var(--sp-card);
     background: var(--bg-card);
     border: 1px solid var(--line);
     border-radius: var(--radius-lg);
 }
 .stack-label {
     display: block;
-    font-family: var(--font-mono);
-    font-size: 0.68rem;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
     color: var(--cy);
-    margin-bottom: 14px;
+    margin-bottom: var(--sp-3);
 }
 .stack-tags { display: flex; flex-wrap: wrap; gap: 7px; }
 
 /* ==========================================================================
    Projects preview
    ========================================================================== */
-.projects-preview { padding: 96px 0; border-top: 1px solid var(--line); }
+.projects-preview { padding: var(--sp-section) 0; border-top: 1px solid var(--line); }
 
 .proj-grid {
     display: grid;
@@ -1190,7 +1230,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     display: flex;
     flex-direction: column;
     gap: 10px;
-    padding: 24px;
+    padding: var(--sp-card);
     background: var(--bg-card);
     border: 1px solid var(--line);
     border-radius: var(--radius-lg);
@@ -1208,22 +1248,15 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
         radial-gradient(760px 200px at 0% 0%, rgba(34, 211, 238, 0.07), transparent 70%),
         var(--bg-card);
 }
-.proj-card-feature .proj-title { font-size: 1.45rem; }
+.proj-card-feature .proj-title { font-size: var(--fs-xl); }
 .proj-card-feature .proj-desc { max-width: 70ch; }
 
 .proj-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .proj-kind {
-    font-family: var(--font-mono);
-    font-size: 0.66rem;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
     color: var(--cy);
 }
 .proj-stage {
-    font-family: var(--font-mono);
-    font-size: 0.64rem;
     letter-spacing: 0.08em;
-    color: var(--text-dim);
     padding: 3px 8px;
     border: 1px dashed rgba(255, 255, 255, 0.16);
     border-radius: var(--radius-sm);
@@ -1231,35 +1264,50 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 
 .proj-title {
     font-family: var(--font-display);
-    font-size: 1.08rem;
+    font-size: var(--fs-lg);
     font-weight: 600;
     letter-spacing: -0.022em;
     line-height: 1.3;
     color: var(--text-hi);
 }
-.proj-desc { font-size: 0.9rem; line-height: 1.65; color: var(--text-mid); flex-grow: 1; }
+.proj-desc { font-size: var(--fs-xs); line-height: 1.65; color: var(--text-mid); flex-grow: 1; }
 .proj-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
 .proj-tags span {
     font-family: var(--font-mono);
-    font-size: 0.68rem;
+    font-size: var(--fs-3xs);
     padding: 3px 9px;
     border: 1px solid var(--line);
     border-radius: var(--radius-sm);
     color: var(--text-lo);
 }
 
+.proj-link {
+    display: inline-flex;
+    align-self: flex-start;
+    align-items: center;
+    gap: 7px;
+    margin-top: var(--sp-1);
+    min-height: 24px;          /* WCAG 2.2 SC 2.5.8 target size */
+    font-family: var(--font-mono);
+    font-size: var(--fs-3xs);
+    color: var(--cy);
+    border-bottom: 1px solid transparent;
+    transition: border-color var(--t-fast);
+}
+.proj-link:hover { border-bottom-color: var(--line-accent); }
+
 /* ==========================================================================
    Footer
    ========================================================================== */
 .footer {
-    padding: 96px 0 40px;
+    padding: var(--sp-section) 0 var(--sp-7);
     border-top: 1px solid var(--line);
     background: radial-gradient(900px 380px at 50% 100%, rgba(34, 211, 238, 0.06), transparent 70%);
 }
 
 .footer-title {
     font-family: var(--font-display);
-    font-size: clamp(1.9rem, 4.2vw, 3.1rem);
+    font-size: var(--fs-title);
     font-weight: 700;
     line-height: 1.14;
     letter-spacing: -0.035em;
@@ -1269,7 +1317,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .footer-highlight { color: var(--cy); }
 
 .footer-lede {
-    font-size: 1.02rem;
+    font-size: var(--fs-lg);
     line-height: 1.7;
     color: var(--text-mid);
     max-width: 56ch;
@@ -1285,7 +1333,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     padding: 11px 18px;
     border: 1px solid var(--line);
     border-radius: 99px;
-    font-size: 0.9rem;
+    font-size: var(--fs-xs);
     color: var(--text-mid);
     background: rgba(255, 255, 255, 0.022);
     transition: color var(--t-fast), border-color var(--t-fast),
@@ -1307,8 +1355,8 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     padding-top: 26px;
     border-top: 1px solid var(--line);
     font-family: var(--font-mono);
-    font-size: 0.72rem;
-    color: var(--text-dim);
+    font-size: var(--fs-3xs);
+    color: var(--text-lo);
 }
 
 /* ==========================================================================
@@ -1345,8 +1393,8 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
    ========================================================================== */
 @media (max-width: 1080px) {
     .hero-container { grid-template-columns: 1fr 290px; gap: 40px; }
-    .skills-grid { grid-template-columns: 1fr; }
-    .graph-container { height: 400px; }
+    .stack-lists { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .graph-container { height: 340px; }
     .proj-grid { grid-template-columns: repeat(2, 1fr); }
     .proj-card-feature { grid-column: span 2; }
     .credentials { grid-template-columns: 1fr 1fr; }
@@ -1369,7 +1417,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
         border-bottom: 1px solid var(--line);
     }
     .nav-links.mobile-open { display: flex; }
-    .nav-link { padding: 11px 12px; font-size: 0.95rem; }
+    .nav-link { padding: 11px 12px; font-size: var(--fs-sm); }
     .nav-link.active::after { display: none; }
     .mobile-toggle { display: flex; }
     .mobile-toggle.active span:nth-child(1) { transform: translateY(6.5px) rotate(45deg); }
@@ -1384,9 +1432,9 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     .snapshot { flex: 1 1 260px; }
     .snapshot-visual { display: none; }
 
-    .stats-container { grid-template-columns: repeat(3, 1fr); }
-    .stat-item:nth-child(3n + 1) { border-left: none; }
-    .stat-item:nth-child(n + 4) { border-top: 1px solid var(--line); }
+    .stats-container { grid-template-columns: repeat(2, 1fr); }
+    .stat-item:nth-child(2n + 1) { border-left: none; }
+    .stat-item:nth-child(n + 3) { border-top: 1px solid var(--line); }
 
     /* Rail rotates vertical */
     .rail { grid-template-columns: 1fr; gap: 2px; padding-top: 0; padding-left: 26px; }
@@ -1427,24 +1475,21 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 }
 
 @media (max-width: 640px) {
-    .journey, .experience, .skills, .projects-preview { padding: 68px 0; }
-    .footer { padding: 68px 0 32px; }
-    .section-head { margin-bottom: 36px; }
+    /* One override retunes every section's rhythm. */
+    :root { --sp-section: var(--sp-8); }
+    .section-head { margin-bottom: var(--sp-6); }
+    .stack-lists { grid-template-columns: 1fr; }
 
     .hero-sidebar { flex-direction: column; }
-    .hero-terminal { font-size: 0.72rem; padding: 11px 13px; }
+    .hero-terminal { font-size: var(--fs-3xs); padding: 11px 13px; }
     .hero-buttons .btn { flex: 1 1 100%; justify-content: center; }
 
-    .stats-container { grid-template-columns: repeat(2, 1fr); }
-    .stat-item { padding: 22px 18px; }
-    .stat-item:nth-child(3n + 1) { border-left: 1px solid var(--line); }
-    .stat-item:nth-child(2n + 1) { border-left: none; }
-    .stat-item:nth-child(n + 3) { border-top: 1px solid var(--line); }
-    .stat-value { font-size: 1.65rem; }
+    .stat-item { padding: var(--sp-5) var(--sp-4); }
+    .stat-value { font-size: var(--fs-2xl); }
 
     .proj-grid { grid-template-columns: 1fr; }
     .proj-card-feature { grid-column: auto; }
-    .graph-container { height: 340px; }
+    .graph-container { height: 300px; }
 
     .evidence-list li { grid-template-columns: 1fr; }
     .ev-date { grid-row: auto; grid-column: 1; }
