@@ -510,7 +510,6 @@ function initJourney() {
     const panels = Array.from(document.querySelectorAll('.stage-panel'));
     if (!tabs.length) return;
 
-    let userPicked = false;
 
     function select(index, { focus = false } = {}) {
         tabs.forEach((tab, i) => {
@@ -529,10 +528,7 @@ function initJourney() {
     }
 
     tabs.forEach((tab, i) => {
-        tab.addEventListener('click', () => {
-            userPicked = true;
-            select(i);
-        });
+        tab.addEventListener('click', () => select(i));
         tab.addEventListener('keydown', (e) => {
             let next = null;
             if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next = (i + 1) % tabs.length;
@@ -541,34 +537,12 @@ function initJourney() {
             else if (e.key === 'End') next = tabs.length - 1;
             if (next === null) return;
             e.preventDefault();
-            userPicked = true;
             select(next, { focus: true });
         });
     });
 
-    // Gentle auto-advance as the section scrolls past — a click always wins.
-    if (!REDUCE_MOTION && 'IntersectionObserver' in window) {
-        const section = document.getElementById('journey');
-        let auto = 0;
-        let timer = null;
-
-        const io = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting && !userPicked && !timer) {
-                    timer = setInterval(() => {
-                        if (userPicked) { clearInterval(timer); timer = null; return; }
-                        auto = (auto + 1) % tabs.length;
-                        select(auto);
-                    }, 4200);
-                } else if (!entry.isIntersecting && timer) {
-                    clearInterval(timer);
-                    timer = null;
-                }
-            });
-        }, { threshold: 0.45 });
-
-        if (section) io.observe(section);
-    }
+    // No auto-advance. The selected tab is the user's declared state; rotating it
+    // every 4.2s hijacked a role="tablist" exactly while someone was reading.
 }
 
 /* ==========================================================================
@@ -615,35 +589,88 @@ function initNavigation() {
     }
 
     if (toggle && links) {
-        toggle.addEventListener('click', () => {
-            const open = links.classList.toggle('mobile-open');
+        const cta = document.querySelector('.nav-cta');
+        const isOpen = () => links.classList.contains('mobile-open');
+
+        // Tab ring in visual order. The Resume CTA is inside it because it stays
+        // visible and clickable while the panel is open - trapping around it
+        // would strand a real control.
+        const ring = () => [...links.querySelectorAll('a'), ...(cta ? [cta] : []), toggle];
+
+        function onKeydown(e) {
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                setOpen(false);
+                toggle.focus();               // focus goes back to the trigger
+                return;
+            }
+            if (e.key !== 'Tab') return;
+            const items = ring();
+            const i = items.indexOf(document.activeElement);
+            if (i === -1) return;             // focus escaped; let the browser handle it
+            e.preventDefault();
+            items[e.shiftKey ? (i - 1 + items.length) % items.length
+                             : (i + 1) % items.length].focus();
+        }
+
+        function onOutside(e) {
+            if (links.contains(e.target) || toggle.contains(e.target)) return;
+            setOpen(false);   // no focus restore - the user is pointing elsewhere on purpose
+        }
+
+        function setOpen(open) {
+            links.classList.toggle('mobile-open', open);
             toggle.classList.toggle('active', open);
             toggle.setAttribute('aria-expanded', String(open));
-        });
+            if (open) {
+                document.addEventListener('keydown', onKeydown, true);
+                document.addEventListener('pointerdown', onOutside, true);
+                const first = links.querySelector('a');
+                if (first) first.focus();
+            } else {
+                document.removeEventListener('keydown', onKeydown, true);
+                document.removeEventListener('pointerdown', onOutside, true);
+            }
+        }
+
+        toggle.addEventListener('click', () => setOpen(!isOpen()));
         links.querySelectorAll('a').forEach(a => {
-            a.addEventListener('click', () => {
-                links.classList.remove('mobile-open');
-                toggle.classList.remove('active');
-                toggle.setAttribute('aria-expanded', 'false');
-            });
+            a.addEventListener('click', () => { if (isOpen()) setOpen(false); });
         });
+
+        // Resizing past the breakpoint while open would strand the panel.
+        window.matchMedia('(min-width: 901px)')
+            .addEventListener('change', e => { if (e.matches && isOpen()) setOpen(false); });
     }
 
-    // Scrollspy
-    const sections = Array.from(document.querySelectorAll('section[id], footer[id]'));
+    // Scrollspy - one observer, zero layout reads per scroll event.
+    // Selector includes .footer[id] because the footer is a sibling of <main>.
+    const sections = Array.from(document.querySelectorAll('main section[id], .footer[id]'));
     const navLinks = Array.from(document.querySelectorAll('.nav-link'));
 
-    if (sections.length && navLinks.length) {
-        const spy = () => {
-            const y = window.scrollY + 140;
-            let current = '';
-            sections.forEach(s => { if (y >= s.offsetTop) current = s.id; });
-            navLinks.forEach(l => {
-                l.classList.toggle('active', l.getAttribute('href') === '#' + current);
-            });
+    if (sections.length && navLinks.length && 'IntersectionObserver' in window) {
+        const linkFor = new Map(
+            navLinks.map(l => [(l.getAttribute('href') || '').replace(/^#/, ''), l])
+        );
+        const visible = new Set();
+
+        const paint = () => {
+            // `sections` is in document order, so the first visible one is topmost.
+            const winner = sections.find(s => visible.has(s.id));
+            navLinks.forEach(l => l.classList.remove('active'));
+            const link = winner && linkFor.get(winner.id);
+            if (link) link.classList.add('active');
         };
-        window.addEventListener('scroll', spy, { passive: true });
-        spy();
+
+        const spy = new IntersectionObserver((entries) => {
+            entries.forEach(e => {
+                if (e.isIntersecting) visible.add(e.target.id);
+                else visible.delete(e.target.id);
+            });
+            paint();
+        }, { rootMargin: '-68px 0px -55% 0px', threshold: 0 });
+
+        sections.forEach(s => spy.observe(s));
     }
 }
 
@@ -656,7 +683,7 @@ function initTypingEffect() {
 
     const phrases = [
         ' turning data into decisions.',
-        ' three internships, all analytics.',
+        ' three internships, three domains.',
         ' python, sql, power bi, tableau.',
         ' shipping full-stack with fastapi.',
         ' step one of five. heading to AI.'
