@@ -71,10 +71,10 @@ function initSpiralCanvas() {
     const ctx = canvas.getContext('2d');
     let W = 0, H = 0, time = 0;
 
-    const cy = token('--cy', '#22D3EE');
+    const ac = token('--ac', '#F0B429');
     const hues = [
-        token('--hue-1', '#22D3EE'), token('--hue-2', '#A78BFA'),
-        token('--hue-3', '#34D399'), token('--hue-4', '#FBBF24'),
+        token('--hue-1', '#F0B429'), token('--hue-2', '#A78BFA'),
+        token('--hue-3', '#34D399'), token('--hue-4', '#38BDF8'),
         token('--hue-5', '#F472B6')
     ];
 
@@ -96,7 +96,7 @@ function initSpiralCanvas() {
             const r = (14 + i * 11) * scale;
             ctx.beginPath();
             ctx.arc(cx, ccy, r, 0, Math.PI * 2);
-            ctx.strokeStyle = rgba(cy, 0.07 + i * 0.015);
+            ctx.strokeStyle = rgba(ac, 0.07 + i * 0.015);
             ctx.lineWidth = 1;
             ctx.stroke();
         }
@@ -125,8 +125,8 @@ function initSpiralCanvas() {
 
         // Core
         const core = ctx.createRadialGradient(cx, ccy, 0, cx, ccy, 16 * scale);
-        core.addColorStop(0, rgba(cy, 0.35));
-        core.addColorStop(1, rgba(cy, 0));
+        core.addColorStop(0, rgba(ac, 0.35));
+        core.addColorStop(1, rgba(ac, 0));
         ctx.beginPath();
         ctx.arc(cx, ccy, 16 * scale, 0, Math.PI * 2);
         ctx.fillStyle = core;
@@ -134,7 +134,7 @@ function initSpiralCanvas() {
 
         ctx.beginPath();
         ctx.arc(cx, ccy, 3.4 * scale, 0, Math.PI * 2);
-        ctx.fillStyle = cy;
+        ctx.fillStyle = ac;
         ctx.fill();
 
     }
@@ -162,10 +162,10 @@ function initSkillsConstellation() {
     const ctx = canvas.getContext('2d');
 
     const CLUSTERS = [
-        { key: 'analytics',   label: 'Analytics',  hue: token('--hue-1', '#22D3EE'), stage: '01' },
+        { key: 'analytics',   label: 'Analytics',  hue: token('--hue-1', '#F0B429'), stage: '01' },
         { key: 'science',     label: 'Science',    hue: token('--hue-2', '#A78BFA'), stage: '02' },
         { key: 'engineering', label: 'Data Eng',   hue: token('--hue-3', '#34D399'), stage: '03' },
-        { key: 'bigdata',     label: 'Big Data',   hue: token('--hue-4', '#FBBF24'), stage: '04' },
+        { key: 'bigdata',     label: 'Big Data',   hue: token('--hue-4', '#38BDF8'), stage: '04' },
         { key: 'ai',          label: 'AI',         hue: token('--hue-5', '#F472B6'), stage: '05' }
     ];
 

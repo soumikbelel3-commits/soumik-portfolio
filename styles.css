@@ -14,7 +14,7 @@
     /* Hairlines are alpha, not solid hex — this is what keeps edges light */
     --line:          rgba(255, 255, 255, 0.07);
     --line-strong:   rgba(255, 255, 255, 0.12);
-    --line-accent:   rgba(34, 211, 238, 0.35);
+    --line-accent:   rgba(240, 180, 41, 0.35);
 
     /* Text — neutral zinc. Ratios below are worst-case, measured against the
        LIGHTEST surface in the system (--bg-card-hover), not the page background,
@@ -26,18 +26,21 @@
                                a reader has to read. Kept only so a
                                stray var() still resolves. */
 
-    /* Accent — electric cyan, dominant */
-    --cy:        #22D3EE;
-    --cy-deep:   #06B6D4;
-    --cy-soft:   rgba(34, 211, 238, 0.14);
-    --cy-glow:   rgba(34, 211, 238, 0.30);
+    /* Accent — amber gold, dominant. Deliberately 159° from Omni Terminal's
+       azure (#4CC2FF) so the two projects read as separate brands. Contrast
+       is 10.73 on the page and 9.30 on the lightest surface: AA everywhere. */
+    --ac:        #F0B429;
+    --ac-soft:   rgba(240, 180, 41, 0.14);
+    --ac-glow:   rgba(240, 180, 41, 0.30);
+    --ac-bright: #F7C846;   /* hover brighten */
+    --on-ac:     #140E02;   /* warm near-black label on a solid accent fill */
 
     /* Stage hues — used ONLY to differentiate the five career stages
        and their matching skill clusters. Never general decoration. */
-    --hue-1: #22D3EE;  /* Data Analyst        */
+    --hue-1: #F0B429;  /* Data Analyst        */
     --hue-2: #A78BFA;  /* Data Scientist      */
     --hue-3: #34D399;  /* Data Engineer       */
-    --hue-4: #FBBF24;  /* Big Data Specialist */
+    --hue-4: #38BDF8;  /* Big Data Specialist */
     --hue-5: #F472B6;  /* AI Engineer         */
 
     /* Type scale — 16px root. 12px is the floor; there is deliberately no 11px
@@ -108,10 +111,10 @@ img { max-width: 100%; display: block; }
 canvas { display: block; }
 button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
 
-::selection { background: var(--cy-glow); color: #fff; }
+::selection { background: var(--ac-glow); color: #fff; }
 
 :focus-visible {
-    outline: 2px solid var(--cy);
+    outline: 2px solid var(--ac);
     outline-offset: 3px;
     border-radius: 4px;
 }
@@ -133,7 +136,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 
 .skip-link {
     position: absolute; top: -60px; left: 16px; z-index: 2000;
-    padding: 10px 18px; background: var(--cy); color: #04141a;
+    padding: 10px 18px; background: var(--ac); color: var(--on-ac);
     font-family: var(--font-mono); font-size: var(--fs-2xs); font-weight: 600;
     border-radius: var(--radius-sm);
     transition: top var(--t-fast);
@@ -153,8 +156,8 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 /* One soft cyan wash, top-centre */
 .bg-glow {
     background:
-        radial-gradient(760px 420px at 50% -8%, rgba(34, 211, 238, 0.10), transparent 70%),
-        radial-gradient(1100px 700px at 50% 0%, rgba(34, 211, 238, 0.04), transparent 75%);
+        radial-gradient(760px 420px at 50% -8%, rgba(240, 180, 41, 0.10), transparent 70%),
+        radial-gradient(1100px 700px at 50% 0%, rgba(240, 180, 41, 0.04), transparent 75%);
 }
 
 /* Fine grid, dissolved by a radial mask so it never reads as a spreadsheet */
@@ -178,12 +181,12 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .bg-aurora span:nth-child(1) {
     width: 520px; height: 520px;
     top: -160px; left: 8%;
-    background: radial-gradient(circle, rgba(34, 211, 238, 0.16), transparent 70%);
+    background: radial-gradient(circle, rgba(240, 180, 41, 0.16), transparent 70%);
 }
 .bg-aurora span:nth-child(2) {
     width: 460px; height: 460px;
     top: 4%; right: 6%;
-    background: radial-gradient(circle, rgba(99, 102, 241, 0.12), transparent 70%);
+    background: radial-gradient(circle, rgba(139, 92, 246, 0.10), transparent 70%);
 }
 
 /* Film grain */
@@ -242,7 +245,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     text-transform: uppercase;
     color: var(--text-lo);
 }
-.label--accent { color: var(--cy); }
+.label--accent { color: var(--ac); }
 .label--block  { display: block; margin-bottom: var(--sp-3); }
 
 /* Mono, sentence case. Dates, issuers, counts, captions, place names. */
@@ -259,7 +262,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     display: inline-block;
     font-size: var(--fs-2xs);
     letter-spacing: 0.09em;
-    color: var(--cy);
+    color: var(--ac);
     margin-bottom: var(--sp-3);
 }
 
@@ -304,7 +307,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     transition: color var(--t-fast), border-color var(--t-fast);
 }
 .head-link svg { transition: transform var(--t-fast); }
-.head-link:hover { color: var(--cy); border-bottom-color: var(--line-accent); }
+.head-link:hover { color: var(--ac); border-bottom-color: var(--line-accent); }
 .head-link:hover svg { transform: translateX(4px); }
 
 /* ==========================================================================
@@ -347,7 +350,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     letter-spacing: -0.03em;
     color: var(--text-hi);
 }
-.nav-logo span { color: var(--cy); }
+.nav-logo span { color: var(--ac); }
 
 .nav-links { display: flex; align-items: center; gap: 6px; }
 
@@ -367,8 +370,8 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     position: absolute;
     left: 13px; right: 13px; bottom: 1px;
     height: 1px;
-    background: var(--cy);
-    box-shadow: 0 0 8px var(--cy-glow);
+    background: var(--ac);
+    box-shadow: 0 0 8px var(--ac-glow);
 }
 
 .nav-cta {
@@ -387,8 +390,8 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 }
 .nav-cta:hover {
     border-color: var(--line-accent);
-    background: var(--cy-soft);
-    color: var(--cy);
+    background: var(--ac-soft);
+    color: var(--ac);
 }
 
 .mobile-toggle {
@@ -458,7 +461,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     box-shadow: 0 0 8px rgba(52, 211, 153, 0.9);
 }
 .tag-sep { width: 1px; height: 12px; background: var(--line-strong); }
-.tag-arrow { color: var(--cy); }
+.tag-arrow { color: var(--ac); }
 .tag-goal { color: var(--text-mid); }
 
 .hero-title {
@@ -471,7 +474,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     margin-bottom: 24px;
 }
 .hero-highlight {
-    color: var(--cy);
+    color: var(--ac);
     position: relative;
     white-space: nowrap;
 }
@@ -480,7 +483,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     position: absolute;
     left: 0; right: 0; bottom: 0.08em;
     height: 0.09em;
-    background: var(--cy);
+    background: var(--ac);
     opacity: 0.22;
     border-radius: 2px;
 }
@@ -509,14 +512,14 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .btn svg { transition: transform var(--t-fast); }
 
 .btn-primary {
-    background: var(--cy);
-    color: #04141a;
+    background: var(--ac);
+    color: var(--on-ac);
     font-weight: 600;
-    box-shadow: 0 0 0 0 var(--cy-glow);
+    box-shadow: 0 0 0 0 var(--ac-glow);
 }
 .btn-primary:hover {
-    background: #4EDDF3;
-    box-shadow: 0 6px 28px -6px var(--cy-glow);
+    background: var(--ac-bright);
+    box-shadow: 0 6px 28px -6px var(--ac-glow);
     transform: translateY(-1px);
 }
 .btn-primary:hover svg { transform: translateX(4px); }
@@ -528,8 +531,8 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 }
 .btn-secondary:hover {
     border-color: var(--line-accent);
-    background: var(--cy-soft);
-    color: var(--cy);
+    background: var(--ac-soft);
+    color: var(--ac);
     transform: translateY(-1px);
 }
 
@@ -547,9 +550,9 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     margin-bottom: 30px;
     max-width: 540px;
 }
-.terminal-prompt { color: var(--cy); }
+.terminal-prompt { color: var(--ac); }
 .terminal-text { color: var(--text-mid); }
-.terminal-cursor { color: var(--cy); animation: blink 1.05s step-end infinite; }
+.terminal-cursor { color: var(--ac); animation: blink 1.05s step-end infinite; }
 
 @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
 
@@ -568,9 +571,9 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
                 background var(--t-fast), transform var(--t-fast);
 }
 .hero-social-link:hover {
-    color: var(--cy);
+    color: var(--ac);
     border-color: var(--line-accent);
-    background: var(--cy-soft);
+    background: var(--ac-soft);
     transform: translateY(-2px);
 }
 
@@ -599,7 +602,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     position: absolute;
     inset: -3px;
     border-radius: 50%;
-    background: conic-gradient(from 0deg, var(--cy), transparent 35%, transparent 65%, var(--cy));
+    background: conic-gradient(from 0deg, var(--ac), transparent 35%, transparent 65%, var(--ac));
     opacity: 0.55;
 }
 @media (prefers-reduced-motion: no-preference) {
@@ -636,8 +639,8 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .panel-dot {
     width: 6px; height: 6px;
     border-radius: 50%;
-    background: var(--cy);
-    box-shadow: 0 0 8px var(--cy-glow);
+    background: var(--ac);
+    box-shadow: 0 0 8px var(--ac-glow);
 }
 
 .snapshot-visual { height: 128px; padding: 8px; }
@@ -658,7 +661,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     flex-shrink: 0;
 }
 .snapshot-row dd { color: var(--text-mid); text-align: right; }
-.snapshot-row dd.is-goal { color: var(--cy); }
+.snapshot-row dd.is-goal { color: var(--ac); }
 
 /* ==========================================================================
    Stats bar
@@ -693,7 +696,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     line-height: 1.1;
 }
 .stat-label {
-    color: var(--cy);
+    color: var(--ac);
 }
 .stat-desc { font-size: var(--fs-2xs); color: var(--text-lo); }
 
@@ -730,8 +733,8 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     width: calc(10vw + 90px);
     max-width: 240px;
     height: 2px;
-    background: linear-gradient(to right, transparent, var(--cy));
-    box-shadow: 0 0 12px var(--cy-glow);
+    background: linear-gradient(to right, transparent, var(--ac));
+    box-shadow: 0 0 12px var(--ac-glow);
 }
 
 .stage {
@@ -757,16 +760,16 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     transition: all var(--t-normal);
 }
 .stage[data-state="current"] .stage-dot {
-    background: var(--cy);
-    border-color: var(--cy);
-    box-shadow: 0 0 0 4px rgba(34, 211, 238, 0.14), 0 0 16px var(--cy-glow);
+    background: var(--ac);
+    border-color: var(--ac);
+    box-shadow: 0 0 0 4px var(--ac-soft), 0 0 16px var(--ac-glow);
 }
 .stage:hover .stage-dot { border-color: rgba(255, 255, 255, 0.45); }
 .stage.is-active .stage-dot {
-    border-color: var(--cy);
-    box-shadow: 0 0 0 4px rgba(34, 211, 238, 0.12);
+    border-color: var(--ac);
+    box-shadow: 0 0 0 4px rgba(240, 180, 41, 0.12);
 }
-.stage.is-active[data-state="current"] .stage-dot { background: var(--cy); }
+.stage.is-active[data-state="current"] .stage-dot { background: var(--ac); }
 
 .stage-num {
     transition: color var(--t-fast);
@@ -785,9 +788,9 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 }
 
 .stage[data-state="current"] .stage-name { color: var(--text-hi); }
-.stage[data-state="current"] .stage-state { color: var(--cy); }
+.stage[data-state="current"] .stage-state { color: var(--ac); }
 
-.stage.is-active .stage-num  { color: var(--cy); }
+.stage.is-active .stage-num  { color: var(--ac); }
 .stage.is-active .stage-name { color: var(--text-hi); }
 
 /* --- Stage detail panels --- */
@@ -825,11 +828,11 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     font-family: var(--font-mono);
     font-size: var(--fs-2xs);
     letter-spacing: 0.1em;
-    color: var(--cy);
+    color: var(--ac);
     padding: 3px 9px;
     border: 1px solid var(--line-accent);
     border-radius: var(--radius-sm);
-    background: var(--cy-soft);
+    background: var(--ac-soft);
 }
 .panel-head h3 {
     font-family: var(--font-display);
@@ -850,9 +853,9 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     background: rgba(52, 211, 153, 0.09);
 }
 .chip-next {
-    color: var(--cy);
+    color: var(--ac);
     border-color: var(--line-accent);
-    background: var(--cy-soft);
+    background: var(--ac-soft);
 }
 .chip-goal {
     color: #F9A8D4;
@@ -866,7 +869,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     font-weight: 500;
     line-height: 1.5;
     letter-spacing: -0.015em;
-    color: var(--cy);
+    color: var(--ac);
     padding-left: 16px;
     border-left: 2px solid var(--line-accent);
     margin-bottom: 18px;
@@ -942,7 +945,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     border-color: rgba(255, 255, 255, 0.16);
     background: transparent;
 }
-.chip-tool:hover { border-color: var(--line-accent); color: var(--cy); }
+.chip-tool:hover { border-color: var(--line-accent); color: var(--ac); }
 
 /* ==========================================================================
    Experience
@@ -973,8 +976,8 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     margin-top: 21px;
     width: 9px; height: 9px;
     border-radius: 50%;
-    background: var(--cy);
-    box-shadow: 0 0 0 4px rgba(34, 211, 238, 0.12), 0 0 14px var(--cy-glow);
+    background: var(--ac);
+    box-shadow: 0 0 0 4px rgba(240, 180, 41, 0.12), 0 0 14px var(--ac-glow);
 }
 
 .exp-body { padding: 20px 0 30px; }
@@ -995,7 +998,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 }
 .exp-period {
     letter-spacing: 0.06em;
-    color: var(--cy);
+    color: var(--ac);
     white-space: nowrap;
 }
 .exp-org { font-size: var(--fs-sm); color: var(--text-mid); margin-top: 3px; }
@@ -1063,7 +1066,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 
 .cred-label {
     display: block;
-    color: var(--cy);
+    color: var(--ac);
     margin-bottom: var(--sp-3);
 }
 .cred-label-spaced { margin-top: 26px; }
@@ -1122,13 +1125,13 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     padding: 11px 18px;
     border: 1px solid var(--line-accent);
     border-radius: 99px;
-    background: var(--cy-soft);
-    color: var(--cy);
+    background: var(--ac-soft);
+    color: var(--ac);
     font-size: var(--fs-xs);
     font-weight: 500;
     transition: background var(--t-fast), transform var(--t-fast);
 }
-.cred-download:hover { background: rgba(34, 211, 238, 0.22); transform: translateY(-1px); }
+.cred-download:hover { background: rgba(240, 180, 41, 0.22); transform: translateY(-1px); }
 
 /* ==========================================================================
    Skills / constellation
@@ -1170,7 +1173,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     border-radius: 50%;
     flex-shrink: 0;
 }
-.legend-solid { background: var(--cy); box-shadow: 0 0 8px var(--cy-glow); }
+.legend-solid { background: var(--ac); box-shadow: 0 0 8px var(--ac-glow); }
 .legend-hollow { border: 1.5px dashed rgba(255, 255, 255, 0.4); }
 
 .constellation-reset {
@@ -1183,7 +1186,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 /* Grow the hit area to 44px without growing the visual box — a taller button
    would dominate .constellation-head. The expansion stays inside its padding. */
 .constellation-reset::after { content: ''; position: absolute; inset: -8px -6px; }
-.constellation-reset:hover { color: var(--cy); border-color: var(--line-accent); }
+.constellation-reset:hover { color: var(--ac); border-color: var(--line-accent); }
 
 .graph-container { height: 380px; padding: 6px; }
 .graph-container canvas { width: 100%; height: 100%; }
@@ -1210,7 +1213,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 }
 .stack-label {
     display: block;
-    color: var(--cy);
+    color: var(--ac);
     margin-bottom: var(--sp-3);
 }
 .stack-tags { display: flex; flex-wrap: wrap; gap: 7px; }
@@ -1245,7 +1248,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .proj-card-feature {
     grid-column: span 3;
     background:
-        radial-gradient(760px 200px at 0% 0%, rgba(34, 211, 238, 0.07), transparent 70%),
+        radial-gradient(760px 200px at 0% 0%, rgba(240, 180, 41, 0.07), transparent 70%),
         var(--bg-card);
 }
 .proj-card-feature .proj-title { font-size: var(--fs-xl); }
@@ -1253,7 +1256,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 
 .proj-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .proj-kind {
-    color: var(--cy);
+    color: var(--ac);
 }
 .proj-stage {
     letter-spacing: 0.08em;
@@ -1290,7 +1293,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     min-height: 24px;          /* WCAG 2.2 SC 2.5.8 target size */
     font-family: var(--font-mono);
     font-size: var(--fs-3xs);
-    color: var(--cy);
+    color: var(--ac);
     border-bottom: 1px solid transparent;
     transition: border-color var(--t-fast);
 }
@@ -1302,7 +1305,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .footer {
     padding: var(--sp-section) 0 var(--sp-7);
     border-top: 1px solid var(--line);
-    background: radial-gradient(900px 380px at 50% 100%, rgba(34, 211, 238, 0.06), transparent 70%);
+    background: radial-gradient(900px 380px at 50% 100%, rgba(240, 180, 41, 0.06), transparent 70%);
 }
 
 .footer-title {
@@ -1314,7 +1317,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     color: var(--text-hi);
     margin-bottom: 20px;
 }
-.footer-highlight { color: var(--cy); }
+.footer-highlight { color: var(--ac); }
 
 .footer-lede {
     font-size: var(--fs-lg);
@@ -1340,9 +1343,9 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
                 background var(--t-fast), transform var(--t-fast);
 }
 .footer-link:hover {
-    color: var(--cy);
+    color: var(--ac);
     border-color: var(--line-accent);
-    background: var(--cy-soft);
+    background: var(--ac-soft);
     transform: translateY(-2px);
 }
 .footer-link-primary { color: var(--text-hi); border-color: var(--line-strong); }
@@ -1450,7 +1453,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
         right: auto; left: -1px;
         width: 2px; max-width: none;
         height: 22px;
-        background: linear-gradient(to bottom, transparent, var(--cy));
+        background: linear-gradient(to bottom, transparent, var(--ac));
     }
     .stage {
         flex-direction: row;
