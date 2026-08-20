@@ -924,6 +924,22 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 
 .chips { display: flex; flex-wrap: wrap; gap: 7px; }
 
+/* The machine-learning rung of a stage. Sits under that stage's tools, hairline
+   off, so it reads as part of the stage rather than a sixth one. */
+.side-ml {
+    margin-top: var(--sp-5);
+    padding-top: var(--sp-5);
+    border-top: 1px solid var(--line);
+}
+.side-ml .panel-side-label { color: var(--ac); margin-bottom: var(--sp-2); }
+.side-ml-note {
+    font-size: var(--fs-xs);
+    line-height: 1.6;
+    color: var(--text-mid);
+    max-width: 38ch;
+    margin-bottom: var(--sp-3);
+}
+
 .chip-tool {
     font-family: var(--font-mono);
     font-size: var(--fs-3xs);
@@ -1188,7 +1204,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .constellation-reset::after { content: ''; position: absolute; inset: -8px -6px; }
 .constellation-reset:hover { color: var(--ac); border-color: var(--line-accent); }
 
-.graph-container { height: 380px; padding: 6px; }
+.graph-container { height: 420px; padding: 6px; }
 .graph-container canvas { width: 100%; height: 100%; }
 
 .graph-caption {
@@ -1196,8 +1212,9 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     border-top: 1px solid var(--line);
 }
 
-/* Six groups now (five resume categories + what's being learned), so they get
-   their own grid rather than a single tall column beside the canvas. */
+/* Seven groups now (six resume categories, ML among them, + what's being
+   learned), so they get their own grid rather than a single tall column
+   beside the canvas. */
 .stack-lists {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1397,7 +1414,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 @media (max-width: 1080px) {
     .hero-container { grid-template-columns: 1fr 290px; gap: 40px; }
     .stack-lists { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .graph-container { height: 340px; }
+    .graph-container { height: 380px; }
     .proj-grid { grid-template-columns: repeat(2, 1fr); }
     .proj-card-feature { grid-column: span 2; }
     .credentials { grid-template-columns: 1fr 1fr; }
@@ -1492,7 +1509,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 
     .proj-grid { grid-template-columns: 1fr; }
     .proj-card-feature { grid-column: auto; }
-    .graph-container { height: 300px; }
+    .graph-container { height: 440px; }
 
     .evidence-list li { grid-template-columns: 1fr; }
     .ev-date { grid-row: auto; grid-column: 1; }

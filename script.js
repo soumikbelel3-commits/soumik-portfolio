@@ -151,9 +151,9 @@ function initSpiralCanvas() {
 
 /* ==========================================================================
    Skills constellation
-   Five cluster hubs mirroring the five career stages, each with its own
-   tools orbiting it. Filled node = working with it; hollow dashed node =
-   still learning it.
+   Five cluster hubs mirroring the five career stages, each with the tools and
+   ML methods that belong to that stage orbiting it. Filled node = working with
+   it; hollow dashed node = still learning it.
    ========================================================================== */
 function initSkillsConstellation() {
     const canvas = document.getElementById('skillsConstellation');
@@ -169,13 +169,18 @@ function initSkillsConstellation() {
         { key: 'ai',          label: 'AI',         hue: token('--hue-5', '#F472B6'), stage: '05' }
     ];
 
+    // Each stage leads with its machine-learning skill: a narrow canvas keeps
+    // only the first three of a cluster, and ML has to survive that cut.
     const TOOLS = {
-        analytics:   [['Python', 1], ['SQL', 1], ['Power BI', 1], ['Tableau', 1]],
-        science:     [['scikit-learn', 1], ['statsmodels', 1], ['SciPy', 1], ['Plotly', 1]],
-        engineering: [['PostgreSQL', 1], ['Redis', 1], ['FastAPI', 1], ['Docker', 0]],
-        bigdata:     [['Spark', 0], ['Kafka', 0], ['AWS', 0], ['Streaming', 0]],
-        ai:          [['LLMs', 0], ['RAG', 0], ['PyTorch', 0], ['MLOps', 0]]
+        analytics:   [['Regression', 1], ['Python', 1], ['SQL', 1], ['Power BI', 1], ['Tableau', 1]],
+        science:     [['Clustering', 1], ['scikit-learn', 1], ['XGBoost', 0],
+                      ['Classification', 1], ['Forecasting', 0]],
+        engineering: [['Feature store', 0], ['PostgreSQL', 1], ['FastAPI', 1], ['Redis', 1], ['Docker', 0]],
+        bigdata:     [['MLlib', 0], ['Spark', 0], ['Kafka', 0], ['Streaming', 0], ['AWS', 0]],
+        ai:          [['Deep learning', 0], ['LLMs', 0], ['RAG', 0], ['PyTorch', 0], ['MLOps', 0]]
     };
+    const COMPACT_AT = 620;   // canvas px below which a cluster shows three tools
+    const SHOWN_COMPACT = 3;
 
     // Build node + edge lists.
     const nodes = [];
@@ -192,12 +197,13 @@ function initSkillsConstellation() {
 
     CLUSTERS.forEach((c) => {
         const hi = hubIndex[c.key];
-        TOOLS[c.key].forEach(([name, owned]) => {
+        TOOLS[c.key].forEach(([name, owned], li) => {
             const idx = nodes.length;
             nodes.push({
                 label: name, sub: owned ? 'working with it' : 'learning it',
-                cluster: c.key, color: c.hue, r: 15,
-                hub: false, owned: !!owned, ci: nodes[hi].ci
+                cluster: c.key, color: c.hue, r: 14,
+                hub: false, owned: !!owned, ci: nodes[hi].ci,
+                slim: li >= SHOWN_COMPACT
             });
             edges.push([hi, idx, !!owned]);
         });
@@ -214,28 +220,61 @@ function initSkillsConstellation() {
     let W = 0, H = 0, time = 0;
     let mouseX = -1, mouseY = -1, hoverIdx = -1, dragIdx = -1;
     let focused = null;   // cluster key highlighted from the journey section
+    let compact = false;  // narrow canvas: fewer tools, smaller nodes
+    let scale = 1;
 
     nodes.forEach(n => { n.x = 0; n.y = 0; n.vx = 0; n.vy = 0; n.hx = 0; n.hy = 0; });
 
     function layout() {
         const cx = W / 2, cyy = H / 2;
         const base = Math.min(W, H);
-        const ring = base * 0.25;
-        const orbit = base * 0.145;
+
+        // A narrow canvas cannot hold thirty labelled nodes, so it shows the
+        // first three tools of each cluster at a reduced scale instead.
+        compact = W < COMPACT_AT;
+        scale = compact ? Math.max(0.8, Math.min(1, base / 420)) : 1;
+        nodes.forEach(n => {
+            n.off = compact && n.slim;
+            n.r = (n.hub ? 27 : 14) * scale;
+        });
+        // A node the resize just dropped must not stay hovered.
+        if (hoverIdx >= 0 && nodes[hoverIdx].off) hoverIdx = -1;
+        if (dragIdx >= 0 && nodes[dragIdx].off) dragIdx = -1;
+
+        // The canvas is far wider than it is tall, so a circular map would sit in
+        // a small disc with empty gutters either side. x stretches to fill that
+        // room; y stays tight, because height is what actually runs out.
+        const sx = Math.max(1, Math.min((W / H) * 0.78, 1.9));
+        // A narrow canvas pulls the clusters back in — spread that far apart,
+        // neighbouring clusters start touching.
+        const ringX = base * (compact ? 0.235 : 0.28) * sx;
+        const ringY = H * 0.145;
+        const rLeaf = 14 * scale;
+        // One orbit, pushed out as far as the canvas allows and no further: a
+        // label needs the node's radius, its own line, and a hair of margin.
+        const labelRoom = rLeaf + 15 * scale + 2;
+        const orbit = Math.max((27 + 14) * scale + 8, Math.min(
+            H * 0.235,
+            H / 2 - ringY - labelRoom,
+            (W / 2 - ringX - rLeaf - 4) / sx
+        ));
 
         CLUSTERS.forEach((c, i) => {
             const a = (i / CLUSTERS.length) * Math.PI * 2 - Math.PI / 2;
             const hub = nodes[hubIndex[c.key]];
-            hub.hx = cx + Math.cos(a) * ring;
-            hub.hy = cyy + Math.sin(a) * ring * 0.94;
+            hub.hx = cx + Math.cos(a) * ringX;
+            hub.hy = cyy + Math.sin(a) * ringY;
 
-            const leaves = nodes.filter(n => !n.hub && n.cluster === c.key);
+            const leaves = nodes.filter(n => !n.hub && !n.off && n.cluster === c.key);
+            // Fan the tools outward from the centre, away from the hub, on a
+            // single arc. Neighbouring labels alternate above and below the node
+            // so a wide one never lands on the one beside it.
+            const spread = leaves.length > 4 ? 1.7 : 1.1;
             leaves.forEach((leaf, li) => {
-                // Fan the tools outward from the centre, away from the hub.
-                const spread = 1.5;
+                leaf.labelUp = li % 2 === 1;
                 const la = a + (li - (leaves.length - 1) / 2) * (spread / leaves.length);
-                leaf.hx = hub.hx + Math.cos(la) * orbit;
-                leaf.hy = hub.hy + Math.sin(la) * orbit * 0.94;
+                leaf.hx = hub.hx + Math.cos(la) * orbit * sx;
+                leaf.hy = hub.hy + Math.sin(la) * orbit;
             });
         });
 
@@ -261,6 +300,7 @@ function initSkillsConstellation() {
     function nearest(px, py) {
         let idx = -1, best = Infinity;
         nodes.forEach((n, i) => {
+            if (n.off) return;
             const d = Math.hypot(px - n.x, py - n.y);
             if (d < n.r + 8 && d < best) { best = d; idx = i; }
         });
@@ -318,6 +358,7 @@ function initSkillsConstellation() {
         for (let i = 0; i < nodes.length; i++) {
             if (i === dragIdx) continue;
             const n = nodes[i];
+            if (n.off) continue;
             const driftX = REDUCE_MOTION ? 0 : Math.sin(time * 0.55 + i * 1.3) * 2;
             const driftY = REDUCE_MOTION ? 0 : Math.cos(time * 0.47 + i * 0.9) * 2;
             n.vx += (n.hx + driftX - n.x) * 0.022;
@@ -368,6 +409,7 @@ function initSkillsConstellation() {
         // Edges
         edges.forEach(([a, b, solid]) => {
             const pa = nodes[a], pb = nodes[b];
+            if (pa.off || pb.off) return;
             const lit = isLit(a) && isLit(b);
             const alpha = lit ? (solid ? 0.4 : 0.22) : 0.05;
 
@@ -399,6 +441,7 @@ function initSkillsConstellation() {
 
         // Nodes
         nodes.forEach((n, i) => {
+            if (n.off) return;
             const lit = isLit(i);
             const hov = i === hoverIdx;
             const R = n.r * (hov ? 1.14 : 1);
@@ -451,14 +494,18 @@ function initSkillsConstellation() {
             ctx.textAlign = 'center';
             if (n.hub) {
                 ctx.fillStyle = lit ? n.color : rgba(n.color, 0.4);
-                ctx.font = `600 12px 'Inter', sans-serif`;
+                ctx.font = `600 ${(12 * scale).toFixed(1)}px 'Inter', sans-serif`;
                 ctx.textBaseline = 'middle';
                 ctx.fillText(n.label, n.x, n.y);
             } else {
                 ctx.fillStyle = lit ? rgba(TEXT_HI, 0.88) : rgba(TEXT_LO, 0.35);
-                ctx.font = `500 10px 'Inter', sans-serif`;
-                ctx.textBaseline = 'top';
-                ctx.fillText(n.label, n.x, n.y + R + 5);
+                ctx.font = `500 ${(10 * scale).toFixed(1)}px 'Inter', sans-serif`;
+                ctx.textBaseline = n.labelUp ? 'bottom' : 'top';
+                // Clamp to the canvas: a tool near the edge shifts its label in
+                // rather than letting it run off the side.
+                const half = ctx.measureText(n.label).width / 2;
+                const lx = Math.max(3 + half, Math.min(W - 3 - half, n.x));
+                ctx.fillText(n.label, lx, n.labelUp ? n.y - R - 5 * scale : n.y + R + 5 * scale);
             }
         });
 
@@ -470,9 +517,10 @@ function initSkillsConstellation() {
             const bw = ctx.measureText(txt).width + 20;
             const bh = 24;
             let bx = n.x - bw / 2;
-            let by = n.y - n.r - bh - 12;
+            let by = n.labelUp ? n.y + n.r + 12 : n.y - n.r - bh - 12;
             bx = Math.max(6, Math.min(W - bw - 6, bx));
             if (by < 6) by = n.y + n.r + 22;
+            if (by + bh > H - 6) by = Math.max(6, n.y - n.r - bh - 12);
 
             ctx.fillStyle = rgba(PANEL_BG, 0.97);
             ctx.strokeStyle = rgba(n.color, 0.5);
