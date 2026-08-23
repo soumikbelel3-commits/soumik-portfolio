@@ -1219,8 +1219,15 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: var(--sp-4);
-    align-items: start;
+    /* Cards stretch to their row's height so every row reads as one band —
+       chip counts differ enough per group that ragged bottoms look broken. */
+    align-items: stretch;
 }
+
+/* Seven groups leave the last one alone on its row. "Currently learning" takes
+   the full width instead, which reads as a deliberate closing band at every
+   column count (3 / 2 / 1). */
+.stack-group:last-child { grid-column: 1 / -1; }
 
 .stack-group {
     padding: var(--sp-card);
