@@ -25,7 +25,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=8">
+    <link rel="stylesheet" href="styles.css?v=9">
     <style>
         :root {
             /* Aliases onto styles.css. This page keeps its own vocabulary, but
@@ -51,27 +51,17 @@
             --transition-normal: var(--t-normal);
         }
 
-        .navbar, .px-hero, main, footer { position: relative; z-index: 1; }
+        .px-hero, main, footer { position: relative; z-index: 1; }
 
-        /* ---------- Navbar ---------- */
-        .navbar {
-            position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
-            background: rgba(8, 8, 10, 0.82);
-            backdrop-filter: blur(18px) saturate(150%); -webkit-backdrop-filter: blur(18px) saturate(150%);
-            border-bottom: 1px solid var(--border-subtle);
-        }
-        .nav-container {
-            max-width: 1200px; margin: 0 auto; padding: 0 24px; height: 60px;
-            display: flex; align-items: center; justify-content: space-between;
-        }
+        /* ---------- Navbar ----------
+           The bar and its container come from styles.css (including the
+           floating pill once scrolled); only this page's contents live here. */
         .nav-back {
             font-family: var(--font-mono); font-size: var(--fs-2xs); font-weight: 500;
             color: var(--text-secondary); letter-spacing: 0.02em;
             display: flex; align-items: center; gap: 8px;
         }
         .nav-back:hover { color: var(--accent); }
-        .nav-logo { font-family: var(--font-display); font-size: var(--fs-xl); font-weight: 700; letter-spacing: -0.02em; }
-        .nav-logo span { color: var(--accent); }
         .nav-gh .gh-short { display: none; }
         .nav-gh {
             font-family: var(--font-mono); font-size: var(--fs-2xs); font-weight: 500;
@@ -98,6 +88,7 @@
         }
         .px-hero h1 .grad {
             background: linear-gradient(120deg, var(--accent), var(--accent-blue) 60%, var(--accent-purple));
+            background-size: 200% 100%;
             -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
         }
         .px-hero p.lead {
@@ -127,14 +118,21 @@
 
         /* ---------- Controls ---------- */
         .controls { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+        .search-wrap { position: relative; display: flex; }
+        .search-icon {
+            position: absolute; left: 12px; top: 50%; translate: 0 -50%;
+            color: var(--text-muted); pointer-events: none;
+            transition: color var(--transition-fast), scale 300ms var(--ease-spring);
+        }
+        .search-wrap:focus-within .search-icon { color: var(--accent); scale: 1.1; }
         .search {
             background: var(--bg-card); border: 1px solid var(--border-color);
-            border-radius: var(--radius-sm); padding: 9px 14px; min-width: 220px;
+            border-radius: var(--radius-sm); padding: 9px 14px 9px 36px; min-width: 220px;
             color: var(--text-primary); font-family: var(--font-sans); font-size: var(--fs-xs);
-            transition: border-color var(--transition-fast);
+            transition: border-color var(--transition-fast), box-shadow var(--transition-normal);
         }
         .search::placeholder { color: var(--text-dim); }
-        .search:focus { outline: none; border-color: var(--accent); }
+        .search:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 4px var(--ac-soft), 0 0 24px -6px var(--ac-glow); }
         .filters { display: flex; gap: 8px; flex-wrap: wrap; }
         .px-filter {
             font-family: var(--font-mono); font-size: var(--fs-3xs); font-weight: 500;
@@ -144,6 +142,7 @@
             display: flex; align-items: center; gap: 6px;
         }
         .px-filter:hover { border-color: var(--border-hover); color: var(--text-primary); }
+        .px-filter:active { scale: 0.94; }
         .px-filter.active { background: rgba(240, 180, 41, 0.12); border-color: var(--accent); color: var(--accent); }
         .px-filter .dot { width: 8px; height: 8px; border-radius: 50%; }
 
@@ -156,18 +155,12 @@
             position: relative; background: var(--bg-card); border: 1px solid var(--border-color);
             border-radius: var(--radius-lg); padding: 22px 22px 18px;
             display: flex; flex-direction: column; min-height: 188px;
-            transition: transform var(--transition-normal), border-color var(--transition-normal), background var(--transition-normal);
+            transition: translate 420ms var(--ease-out), border-color var(--transition-normal), background var(--transition-normal);
             overflow: hidden;
         }
-        .card::before {
-            content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 1px;
-            background: linear-gradient(135deg, rgba(240, 180, 41, 0.4), transparent 40%);
-            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-            -webkit-mask-composite: xor; mask-composite: exclude;
-            opacity: 0; transition: opacity var(--transition-normal); pointer-events: none;
-        }
-        .card:hover { transform: translateY(-4px); border-color: var(--border-hover); background: var(--bg-card-hover); }
-        .card:hover::before { opacity: 1; }
+        /* The hover border and fill come from the shared .spot treatment in
+           styles.css, which tracks the pointer. */
+        .card:hover { translate: 0 -4px; border-color: var(--border-hover); background: var(--bg-card-hover); }
         .card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
         .card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
@@ -276,6 +269,30 @@
         }
         .foot a:hover { color: var(--accent); }
 
+        /* ---------- Motion ----------
+           The grid re-renders through innerHTML on every filter or search, so
+           the card cascade replays each time without any extra JS. */
+        @media (prefers-reduced-motion: no-preference) {
+            .grid .card:not(.skeleton) {
+                animation: card-in 560ms var(--ease-out) backwards;
+                animation-delay: calc(min(var(--i, 0), 12) * 45ms);
+            }
+            .px-hero h1 .grad { animation: grad-flow 9s ease-in-out infinite alternate; }
+            .px-filter.active { animation: chip-press 360ms var(--ease-spring); }
+        }
+        @keyframes card-in {
+            from { opacity: 0; translate: 0 16px; }
+            to   { opacity: 1; translate: 0 0; }
+        }
+        @keyframes grad-flow {
+            from { background-position: 0% 0; }
+            to   { background-position: 100% 0; }
+        }
+        @keyframes chip-press {
+            0%   { scale: 0.92; }
+            100% { scale: 1; }
+        }
+
         /* ---------- Responsive ---------- */
         @media (max-width: 820px) {
             .resume { grid-template-columns: 1fr; padding: 26px; }
@@ -290,7 +307,7 @@
             .nav-gh .gh-user { display: none; }
             .nav-gh .gh-short { display: inline; }
             .sec-head { margin: 44px 0 20px; }
-            .search { min-width: 0; width: 100%; }
+            .search-wrap, .search { min-width: 0; width: 100%; }
             .controls { width: 100%; }
         }
     </style>
@@ -299,12 +316,13 @@
     <!-- Ambient background layers -->
     <div class="bg-glow" aria-hidden="true"></div>
     <div class="bg-grid" aria-hidden="true"></div>
-    <div class="bg-aurora" aria-hidden="true"><span></span><span></span></div>
+    <div class="bg-aurora" aria-hidden="true"><span></span><span></span><span></span></div>
+    <div class="bg-spotlight" aria-hidden="true"></div>
     <div class="bg-grain" aria-hidden="true"></div>
 
     <a href="#projects" class="skip-link">Skip to projects</a>
 
-    <nav class="navbar">
+    <nav class="navbar" id="navbar">
         <div class="nav-container">
             <a href="index.html" class="nav-back">← BACK TO SITE</a>
             <a href="index.html" class="nav-logo">S<span>.</span></a>
@@ -314,6 +332,7 @@
                 <span class="gh-short">GitHub</span>
             </a>
         </div>
+        <div class="scroll-progress" aria-hidden="true"></div>
     </nav>
 
     <header class="px-hero">
@@ -334,7 +353,10 @@
             <div class="sec-head">
                 <h2 class="sec-title">Projects</h2>
                 <div class="controls">
-                    <input type="text" class="search" id="search" placeholder="Search projects…" aria-label="Search projects">
+                    <div class="search-wrap">
+                        <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
+                        <input type="text" class="search" id="search" placeholder="Search projects…" aria-label="Search projects">
+                    </div>
                     <div class="filters" id="filters"></div>
                 </div>
             </div>
@@ -377,6 +399,7 @@
         </div>
     </footer>
 
+    <script src="script.js?v=9"></script>
     <script>
     (function () {
         "use strict";
@@ -474,10 +497,12 @@
                 });
         }
 
-        function cardHTML(r) {
+        // --i drives the card-in cascade; .spot opts the card into the shared
+        // pointer-tracked border and fill.
+        function cardHTML(r, i) {
             const badge = r.featured ? '<span class="badge">★ Featured</span>' : '';
             return '' +
-                '<a class="card" href="' + esc(r.url) + '" target="_blank" rel="noopener noreferrer">' +
+                '<a class="card spot" style="--i:' + Math.min(i, 12) + '" href="' + esc(r.url) + '" target="_blank" rel="noopener noreferrer">' +
                     '<div class="card-top">' +
                         '<div class="card-icon">' +
                             '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>' +
@@ -530,11 +555,31 @@
             });
         }
 
+        const REDUCE = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+        // Count from whatever is showing now (the "—" placeholder, or the
+        // cached figure when live data lands) up to the new value.
+        function countTo(el, target) {
+            const from = parseInt(el.textContent, 10) || 0;
+            const run = (el._countRun || 0) + 1;
+            el._countRun = run;
+            // A background tab gets no animation frames, so it would sit on
+            // the first frame's number until refocused. Just show the value.
+            if (REDUCE || document.hidden || from === target) { el.textContent = target; return; }
+            const start = performance.now(), DURATION = 900;
+            (function step(now) {
+                if (el._countRun !== run) return;   // a newer count took over
+                const p = Math.min((now - start) / DURATION, 1);
+                el.textContent = Math.round(from + (target - from) * (1 - Math.pow(1 - p, 3)));
+                if (p < 1) requestAnimationFrame(step);
+            })(start);
+        }
+
         function setStats() {
             const langs = new Set(allRepos.map(r => r.language));
-            $("statRepos").textContent = allRepos.length;
-            $("statLangs").textContent = langs.size;
-            $("statFeat").textContent = allRepos.filter(r => r.featured).length;
+            countTo($("statRepos"), allRepos.length);
+            countTo($("statLangs"), langs.size);
+            countTo($("statFeat"), allRepos.filter(r => r.featured).length);
         }
 
         function showSkeleton() {
