@@ -4,6 +4,53 @@
    ========================================================================== */
 
 const REDUCE_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+/* Pointer-driven effects (spotlight, tilt, magnetic pull, cursor glow) only
+   make sense with a mouse or trackpad — never on touch. */
+const FINE_POINTER = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+
+/* Collapse a burst of calls into at most one per animation frame. The
+   latest argument wins. */
+function rafThrottle(fn) {
+    let queued = false, last;
+    return (arg) => {
+        last = arg;
+        if (queued) return;
+        queued = true;
+        requestAnimationFrame(() => { queued = false; fn(last); });
+    };
+}
+
+/* Tell a callback when an element enters or leaves the viewport. Used to
+   park canvas loops and scroll work while their section is offscreen. */
+function whenVisible(el, onChange, options) {
+    if (!('IntersectionObserver' in window)) { onChange(true); return null; }
+    const io = new IntersectionObserver((entries) => {
+        entries.forEach(e => onChange(e.isIntersecting, io));
+    }, options || { rootMargin: '120px 0px' });
+    io.observe(el);
+    return io;
+}
+
+/* One delegated pointermove listener for every pointer effect, throttled to
+   a frame. Subscribers get { x, y, target }; target is null when the
+   pointer leaves the window, which is their cue to let go. */
+const pointerSubs = [];
+function onPointer(fn) {
+    if (!pointerSubs.length) {
+        const emit = rafThrottle((p) => pointerSubs.forEach(sub => sub(p)));
+        document.addEventListener('pointermove', (e) => {
+            if (e.pointerType === 'touch') return;
+            emit({ x: e.clientX, y: e.clientY, target: e.target });
+        }, { passive: true });
+        document.documentElement.addEventListener('mouseleave', () => {
+            emit({ x: -1, y: -1, target: null });
+        });
+    }
+    pointerSubs.push(fn);
+}
+function closestTo(target, selector) {
+    return target && target.closest ? target.closest(selector) : null;
+}
 
 /* Read a CSS custom property so canvases follow the palette
    instead of drifting from it. */
@@ -139,14 +186,25 @@ function initSpiralCanvas() {
 
     }
 
-    function frame() {
-        render();
-        time += 0.016;
-        requestAnimationFrame(frame);
-    }
-
     watchSize(canvas, resize);
-    if (!REDUCE_MOTION) frame();
+    if (!REDUCE_MOTION) runWhileVisible(canvas, () => { render(); time += 0.016; });
+}
+
+/* Drive a per-frame callback only while its canvas is on screen and the tab
+   is visible. Nothing is scheduled at all otherwise. */
+function runWhileVisible(canvas, tick) {
+    let onScreen = false, raf = 0;
+    function frame() {
+        raf = 0;
+        if (!onScreen || document.hidden) return;
+        tick();
+        raf = requestAnimationFrame(frame);
+    }
+    function kick() {
+        if (onScreen && !document.hidden && !raf) raf = requestAnimationFrame(frame);
+    }
+    whenVisible(canvas, (vis) => { onScreen = vis; kick(); });
+    document.addEventListener('visibilitychange', kick);
 }
 
 /* ==========================================================================
@@ -222,6 +280,10 @@ function initSkillsConstellation() {
     let focused = null;   // cluster key highlighted from the journey section
     let compact = false;  // narrow canvas: fewer tools, smaller nodes
     let scale = 1;
+    // Intro fade, 0 → 1. Held at 0 until the map first scrolls into view so
+    // the bloom is the first thing anyone sees of it.
+    let intro = REDUCE_MOTION ? 1 : 0;
+    let introStart = 0;
 
     nodes.forEach(n => { n.x = 0; n.y = 0; n.vx = 0; n.vy = 0; n.hx = 0; n.hy = 0; });
 
@@ -392,10 +454,30 @@ function initSkillsConstellation() {
     const TEXT_LO = token('--text-lo', '#71717A');
     const PANEL_BG = token('--bg-overlay', '#1A1A1F');
 
+    /* Bloom: hubs start at the centre, tools start on their hub's home, and
+       the existing spring in step() carries everything outward. */
+    function bloom() {
+        const cx = W / 2, cyy = H / 2;
+        nodes.forEach(n => {
+            if (n.hub) { n.x = cx; n.y = cyy; }
+            else {
+                const hub = nodes[hubIndex[n.cluster]];
+                n.x = hub.hx; n.y = hub.hy;
+            }
+            n.vx = 0; n.vy = 0;
+        });
+        introStart = performance.now();
+    }
+
     function render() {
         if (W === 0) return;
         ctx.clearRect(0, 0, W, H);
         step();
+
+        if (intro < 1 && introStart) {
+            intro = Math.min(1, (performance.now() - introStart) / 900);
+        }
+        ctx.globalAlpha = 1 - Math.pow(1 - intro, 3);
 
         const hovering = hoverIdx >= 0;
         // A node is "lit" if nothing is hovered/focused, or it's part of the
@@ -534,17 +616,20 @@ function initSkillsConstellation() {
             ctx.textBaseline = 'middle';
             ctx.fillText(txt, bx + 10, by + bh / 2);
         }
-    }
-
-    function frame() {
-        render();
-        time += 0.016;
-        requestAnimationFrame(frame);
+        ctx.globalAlpha = 1;
     }
 
     // Sized last: render() closes over the token constants declared above it.
     watchSize(canvas, resizeAll);
-    frame();
+    runWhileVisible(canvas, () => { render(); time += 0.016; });
+
+    if (!REDUCE_MOTION) {
+        whenVisible(canvas, (vis, io) => {
+            if (!vis || introStart) return;
+            if (io) io.disconnect();
+            bloom();
+        }, { threshold: 0.3 });
+    }
 }
 
 /* ==========================================================================
@@ -558,8 +643,41 @@ function initJourney() {
     const panels = Array.from(document.querySelectorAll('.stage-panel'));
     if (!tabs.length) return;
 
+    const indicator = rail.querySelector('.rail-indicator');
+    let current = Math.max(0, tabs.findIndex(t => t.classList.contains('is-active')));
+
+    // The selection pill is sized to the selected tab and moved by
+    // `translate`. offset* ignore transforms, so the rail's own reveal
+    // animation can't skew the measurement.
+    function placeIndicator(instant) {
+        if (!indicator) return;
+        const t = tabs[current];
+        if (instant) indicator.style.transition = 'none';
+        indicator.style.width = t.offsetWidth + 'px';
+        indicator.style.height = t.offsetHeight + 'px';
+        indicator.style.translate = `${t.offsetLeft}px ${t.offsetTop}px`;
+        if (instant) {
+            void indicator.offsetWidth;   // commit the jump before re-enabling transitions
+            indicator.style.transition = '';
+        }
+    }
+
+    // Each panel's contents cascade in on switch. Main column and side column
+    // count separately so both finish at about the same time.
+    panels.forEach(panel => {
+        [['.panel-main', '.panel-head, .panel-thesis, .panel-body, .evidence-label, .evidence-list li'],
+         ['.panel-side', '.panel-side-label, .side-ml-note, .chip-tool']].forEach(([col, sel], c) => {
+            const root = panel.querySelector(col);
+            if (!root) return;
+            root.querySelectorAll(sel).forEach((el, i) => {
+                el.classList.add('cascade');
+                el.style.setProperty('--i', i + c * 2);
+            });
+        });
+    });
 
     function select(index, { focus = false } = {}) {
+        const dir = index > current ? 'next' : index < current ? 'prev' : null;
         tabs.forEach((tab, i) => {
             const on = i === index;
             tab.classList.toggle('is-active', on);
@@ -568,12 +686,21 @@ function initJourney() {
         });
         panels.forEach((panel, i) => {
             const on = i === index;
+            if (on && dir) panel.dataset.dir = dir;
             panel.classList.toggle('is-active', on);
             panel.hidden = !on;
         });
+        current = index;
+        placeIndicator(false);
         if (focus) tabs[index].focus();
         if (Bus.focusCluster) Bus.focusCluster(tabs[index].dataset.cluster || null);
     }
+
+    placeIndicator(true);
+    const replace = rafThrottle(() => placeIndicator(true));
+    if ('ResizeObserver' in window) new ResizeObserver(replace).observe(rail);
+    window.addEventListener('resize', replace);
+    if (document.fonts) document.fonts.ready.then(replace);
 
     tabs.forEach((tab, i) => {
         tab.addEventListener('click', () => select(i));
@@ -597,29 +724,73 @@ function initJourney() {
    Scroll reveal
    ========================================================================== */
 function initScrollReveal() {
-    const targets = document.querySelectorAll(
-        '.stats-bar, .section-head, .rail-wrap, .stage-panels, .exp-item, ' +
-        '.credentials, .skills-grid, .proj-card, .footer-links, .footer-title'
-    );
-    targets.forEach(el => el.classList.add('reveal'));
+    const targets = [];
+    const mark = (el, i, stepMs, blur) => {
+        el.classList.add('reveal');
+        if (blur) el.classList.add('reveal-blur');
+        if (i) el.style.setProperty('--reveal-delay', `${Math.min(i, 12) * stepMs}ms`);
+        targets.push(el);
+    };
+
+    // Section heads: eyebrow, title, lede land one after another. Titles
+    // come in out of a blur.
+    document.querySelectorAll('.section-head, .footer > .section-container').forEach(head => {
+        head.querySelectorAll('.eyebrow, .section-title, .section-lede, .head-link, .footer-title, .footer-lede')
+            .forEach((el, i) => mark(el, i, 80, el.matches('.section-title, .footer-title')));
+    });
+
+    // Whole blocks.
+    document.querySelectorAll(
+        '.stats-bar, .tool-marquee, .rail-wrap, .stage-panels, .constellation-wrap, ' +
+        '.footer-links, .footer-wordmark'
+    ).forEach(el => mark(el, 0, 0));
+
+    // Sets: stagger by position within their own set, not across the page.
+    ['.exp-list > .exp-item', '.credentials > .cred-block',
+     '.stack-lists > .stack-group', '.proj-grid > .proj-card'].forEach(sel => {
+        document.querySelectorAll(sel).forEach((el, i) => mark(el, i, 45));
+    });
+
+    // Small things inside a revealed block cascade in after it; CSS keys the
+    // animation off the block's .in-view.
+    [['.stack-group', '.chip-tool'], ['.exp-item', '.exp-tags span'],
+     ['.cred-block', '.cert-list li'], ['.proj-card', '.proj-tags span']].forEach(([block, sel]) => {
+        document.querySelectorAll(block).forEach(b => {
+            b.querySelectorAll(sel).forEach((el, i) => {
+                el.classList.add('stagger');
+                el.style.setProperty('--i', i);
+            });
+        });
+    });
 
     if (!('IntersectionObserver' in window)) {
         targets.forEach(el => el.classList.add('in-view'));
         return;
     }
 
+    // Once the entrance transition ends, drop .reveal so the element's own
+    // transitions (hover lifts, border fades) are back in charge. .in-view
+    // stays — it's the hook for one-shot effects like the rail fill.
+    function settle(el) {
+        el.addEventListener('transitionend', function done(e) {
+            if (e.target !== el || e.propertyName !== 'opacity') return;
+            el.removeEventListener('transitionend', done);
+            el.classList.remove('reveal', 'reveal-blur');
+        });
+    }
+
     const io = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (!entry.isIntersecting) return;
-            entry.target.classList.add('in-view');
-            io.unobserve(entry.target);
+            const el = entry.target;
+            io.unobserve(el);
+            if (!REDUCE_MOTION) settle(el);
+            el.classList.add('in-view');
+            el.dispatchEvent(new CustomEvent('reveal'));
         });
     }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
 
-    targets.forEach((el, i) => {
-        el.style.transitionDelay = `${Math.min(i % 6, 5) * 55}ms`;
-        io.observe(el);
-    });
+    targets.forEach(el => io.observe(el));
 }
 
 /* ==========================================================================
@@ -631,13 +802,19 @@ function initNavigation() {
     const links = document.getElementById('navLinks');
 
     if (navbar) {
-        const onScroll = () => navbar.classList.toggle('is-scrolled', window.scrollY > 20);
+        const onScroll = () => {
+            const scrolled = window.scrollY > 20;
+            navbar.classList.toggle('is-scrolled', scrolled);
+            document.documentElement.classList.toggle('scrolled', scrolled);
+        };
         window.addEventListener('scroll', onScroll, { passive: true });
         onScroll();
     }
 
     if (toggle && links) {
         const cta = document.querySelector('.nav-cta');
+        // Stagger index for the menu's open cascade.
+        links.querySelectorAll('.nav-link').forEach((a, i) => a.style.setProperty('--i', i));
         const isOpen = () => links.classList.contains('mobile-open');
 
         // Tab ring in visual order. The Resume CTA is inside it because it stays
@@ -708,6 +885,7 @@ function initNavigation() {
             navLinks.forEach(l => l.classList.remove('active'));
             const link = winner && linkFor.get(winner.id);
             if (link) link.classList.add('active');
+            if (Bus.navIndicate) Bus.navIndicate();
         };
 
         const spy = new IntersectionObserver((entries) => {
@@ -720,6 +898,278 @@ function initNavigation() {
 
         sections.forEach(s => spy.observe(s));
     }
+}
+
+/* ==========================================================================
+   Nav indicator — one underline that glides between links
+   ========================================================================== */
+function initNavIndicator() {
+    const wrap = document.getElementById('navLinks');
+    const bar = wrap && wrap.querySelector('.nav-indicator');
+    if (!bar) return;
+
+    const INSET = 13;   // matches .nav-link's horizontal padding
+    let hovered = null;
+
+    function place() {
+        const link = hovered || wrap.querySelector('.nav-link.active');
+        if (!link) { bar.classList.remove('is-on'); return; }
+        // Appearing from nothing should fade in where it is, not slide in
+        // from wherever it was last parked.
+        const fromHidden = !bar.classList.contains('is-on');
+        if (fromHidden) bar.style.transition = 'none';
+        bar.style.width = (link.offsetWidth - INSET * 2) + 'px';
+        bar.style.translate = (link.offsetLeft + INSET) + 'px 0';
+        if (fromHidden) {
+            void bar.offsetWidth;
+            bar.style.transition = '';
+        }
+        bar.classList.add('is-on');
+    }
+
+    wrap.addEventListener('pointerover', (e) => {
+        const link = closestTo(e.target, '.nav-link');
+        if (link && link !== hovered) { hovered = link; place(); }
+    });
+    wrap.addEventListener('pointerleave', () => { hovered = null; place(); });
+    wrap.addEventListener('focusin', (e) => {
+        if (e.target.matches('.nav-link')) { hovered = e.target; place(); }
+    });
+    wrap.addEventListener('focusout', () => { hovered = null; place(); });
+
+    Bus.navIndicate = place;
+    window.addEventListener('resize', rafThrottle(place));
+    if (document.fonts) document.fonts.ready.then(place);
+}
+
+/* ==========================================================================
+   Scroll progress hairline
+   ========================================================================== */
+function initScrollProgress() {
+    const bar = document.querySelector('.scroll-progress');
+    if (!bar) return;
+    const update = rafThrottle(() => {
+        const max = document.documentElement.scrollHeight - window.innerHeight;
+        const p = max > 0 ? Math.min(1, Math.max(0, window.scrollY / max)) : 0;
+        bar.style.scale = `${p.toFixed(4)} 1`;
+    });
+    window.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+    update();
+}
+
+/* ==========================================================================
+   Cursor glow — an ambient pool that trails the pointer
+   ========================================================================== */
+function initCursorGlow() {
+    const el = document.querySelector('.bg-spotlight');
+    if (!el || !FINE_POINTER || REDUCE_MOTION) return;
+
+    let tx = 0, ty = 0, cx = 0, cy = 0, raf = 0, placed = false;
+
+    // Lerp toward the pointer, and stop scheduling frames once it's caught up.
+    function tick() {
+        cx += (tx - cx) * 0.12;
+        cy += (ty - cy) * 0.12;
+        el.style.translate = `${cx.toFixed(1)}px ${cy.toFixed(1)}px`;
+        raf = Math.abs(tx - cx) + Math.abs(ty - cy) > 0.5 ? requestAnimationFrame(tick) : 0;
+    }
+
+    onPointer(({ x, y, target }) => {
+        if (!target) { el.classList.remove('is-on'); return; }
+        tx = x; ty = y;
+        if (!placed) { cx = x; cy = y; placed = true; }
+        el.classList.add('is-on');
+        if (!raf) raf = requestAnimationFrame(tick);
+    });
+}
+
+/* ==========================================================================
+   Spotlight cards — a radial fill and border ring that follow the pointer
+   ========================================================================== */
+function initSpotlight() {
+    document.querySelectorAll('.proj-card, .stat-item, .stage-panel, .stack-group, .cred-card')
+        .forEach(el => el.classList.add('spot'));
+    if (!FINE_POINTER) return;
+
+    onPointer(({ x, y, target }) => {
+        const el = closestTo(target, '.spot');
+        if (!el) return;
+        const r = el.getBoundingClientRect();
+        el.style.setProperty('--mx', `${(x - r.left).toFixed(1)}px`);
+        el.style.setProperty('--my', `${(y - r.top).toFixed(1)}px`);
+    });
+}
+
+/* ==========================================================================
+   Magnetic controls — a small pull toward the cursor, sprung back on leave
+   ========================================================================== */
+function initMagnetic() {
+    if (!FINE_POINTER || REDUCE_MOTION) return;
+
+    const SEL = '.btn, .nav-cta, .hero-social-link, .footer-link, .px-btn';
+    const MAX = 6, PULL = 0.25;
+    let active = null, tx = 0, ty = 0;
+
+    function release() {
+        if (active) active.style.translate = '';
+        active = null; tx = 0; ty = 0;
+    }
+
+    onPointer(({ x, y, target }) => {
+        const el = closestTo(target, SEL);
+        if (el !== active) { release(); active = el; }
+        if (!el) return;
+        // The rect already includes the pull we applied last frame; take it
+        // back out so the element doesn't chase its own offset.
+        const r = el.getBoundingClientRect();
+        const clamp = v => Math.max(-MAX, Math.min(MAX, v * PULL));
+        tx = clamp(x - (r.left + r.width / 2 - tx));
+        ty = clamp(y - (r.top + r.height / 2 - ty));
+        el.style.translate = `${tx.toFixed(2)}px ${ty.toFixed(2)}px`;
+    });
+}
+
+/* ==========================================================================
+   Tilt — a gentle 3D lean toward the cursor, with a glare highlight
+   ========================================================================== */
+function initTilt() {
+    if (!FINE_POINTER || REDUCE_MOTION) return;
+
+    document.querySelectorAll('.profile-card, .snapshot, .resume-preview')
+        .forEach(el => el.classList.add('tilt'));
+
+    const MAX = 5;   // degrees
+    let active = null;
+
+    function release() {
+        if (!active) return;
+        active.classList.remove('is-tilting');
+        ['--rx', '--ry', '--gx', '--gy'].forEach(p => active.style.removeProperty(p));
+        active = null;
+    }
+
+    onPointer(({ x, y, target }) => {
+        const el = closestTo(target, '.tilt');
+        if (el !== active) { release(); active = el; }
+        if (!el) return;
+        el.classList.add('is-tilting');
+        const r = el.getBoundingClientRect();
+        const px = Math.min(1, Math.max(0, (x - r.left) / r.width));
+        const py = Math.min(1, Math.max(0, (y - r.top) / r.height));
+        el.style.setProperty('--ry', `${((px - 0.5) * 2 * MAX).toFixed(2)}deg`);
+        el.style.setProperty('--rx', `${((0.5 - py) * 2 * MAX).toFixed(2)}deg`);
+        el.style.setProperty('--gx', `${(px * 100).toFixed(1)}%`);
+        el.style.setProperty('--gy', `${(py * 100).toFixed(1)}%`);
+    });
+}
+
+/* ==========================================================================
+   Experience timeline — the path fills as you read down it
+   ========================================================================== */
+function initTimelineProgress() {
+    const list = document.querySelector('.exp-list');
+    if (!list || REDUCE_MOTION) return;
+    const markers = list.querySelectorAll('.exp-marker');
+    if (markers.length < 2) return;
+
+    let top = 0, len = 1;
+
+    // Walk offsetTop up to the list rather than using getBoundingClientRect:
+    // the items are mid-reveal (and translated) when this first runs.
+    function dotY(marker) {
+        const dot = marker.querySelector('span');
+        let y = dot.offsetHeight / 2;
+        for (let el = dot; el && el !== list; el = el.offsetParent) y += el.offsetTop;
+        return y;
+    }
+    function measure() {
+        top = dotY(markers[0]);
+        len = Math.max(1, dotY(markers[markers.length - 1]) - top);
+        list.style.setProperty('--exp-top', `${top}px`);
+        list.style.setProperty('--exp-len', `${len}px`);
+        update();
+    }
+    // The fill's leading edge follows a line 60% of the way down the viewport.
+    const update = rafThrottle(() => {
+        const edge = window.innerHeight * 0.6 - (list.getBoundingClientRect().top + top);
+        list.style.setProperty('--exp-p', Math.min(1, Math.max(0, edge / len)).toFixed(4));
+    });
+
+    let listening = false;
+    whenVisible(list, (vis) => {
+        if (vis === listening) return;
+        listening = vis;
+        if (vis) { window.addEventListener('scroll', update, { passive: true }); update(); }
+        else window.removeEventListener('scroll', update);
+    });
+
+    measure();
+    if ('ResizeObserver' in window) new ResizeObserver(rafThrottle(measure)).observe(list);
+    window.addEventListener('load', measure);
+}
+
+/* ==========================================================================
+   Eyebrow decode — mono labels resolve out of random glyphs
+   The real text stays in an .sr-only span; only an aria-hidden copy moves.
+   ========================================================================== */
+function initDecode() {
+    if (REDUCE_MOTION) return;
+    const GLYPHS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/<>_#%+*';
+
+    function decode(node, text) {
+        const start = performance.now();
+        const DURATION = 520, SWAP = 45;   // ms; new glyphs every SWAP ms
+        let lastSwap = 0;
+        function frame(now) {
+            const t = (now - start) / DURATION;
+            if (t >= 1) { node.textContent = text; return; }
+            if (now - lastSwap >= SWAP) {
+                lastSwap = now;
+                let out = '';
+                for (let i = 0; i < text.length; i++) {
+                    const ch = text[i];
+                    // Characters lock in left to right.
+                    const settled = ch === ' ' || t >= 0.2 + (i / text.length) * 0.8;
+                    out += settled ? ch : GLYPHS[(Math.random() * GLYPHS.length) | 0];
+                }
+                node.textContent = out;
+            }
+            requestAnimationFrame(frame);
+        }
+        requestAnimationFrame(frame);
+    }
+
+    document.querySelectorAll('.eyebrow, .hero-eyebrow').forEach(el => {
+        const text = el.textContent.trim();
+        if (!text) return;
+        const real = document.createElement('span');
+        real.className = 'sr-only';
+        real.textContent = text;
+        const shown = document.createElement('span');
+        shown.setAttribute('aria-hidden', 'true');
+        shown.textContent = text;
+        el.replaceChildren(real, shown);
+
+        const run = () => decode(shown, text);
+        // Scroll-revealed eyebrows decode as they arrive; the projects page
+        // hero eyebrow is above the fold, so it just goes.
+        if (el.classList.contains('eyebrow')) el.addEventListener('reveal', run, { once: true });
+        else setTimeout(run, 200);
+    });
+}
+
+/* ==========================================================================
+   Tool marquee — clone the list so the loop is seamless
+   ========================================================================== */
+function initMarquee() {
+    const track = document.querySelector('.marquee-track');
+    const group = track && track.querySelector('.marquee-group');
+    if (!group || REDUCE_MOTION) return;   // reduced motion keeps the static wrapped row
+    const clone = group.cloneNode(true);
+    clone.setAttribute('aria-hidden', 'true');
+    track.appendChild(clone);
+    track.classList.add('is-animated');
 }
 
 /* ==========================================================================
@@ -798,7 +1248,10 @@ function animateCounters() {
                 const eased = 1 - Math.pow(1 - p, 3);
                 el.textContent = Math.floor(eased * target) + suffix;
                 if (p < 1) requestAnimationFrame(update);
-                else el.textContent = text;
+                else {
+                    el.textContent = text;
+                    el.classList.add('is-landed');   // small spring settle
+                }
             }
             requestAnimationFrame(update);
         });
@@ -829,13 +1282,24 @@ function initSmoothScroll() {
 /* ==========================================================================
    Boot
    ========================================================================== */
+/* Every init* null-guards its own elements, so projects.html runs this same
+   list and simply skips what it doesn't have. */
 document.addEventListener('DOMContentLoaded', () => {
+    initNavIndicator();
     initNavigation();
+    initScrollProgress();
     initSmoothScroll();
+    initDecode();
+    initMarquee();
+    initSpotlight();
     initScrollReveal();
     initTypingEffect();
     animateCounters();
     initSpiralCanvas();
     initSkillsConstellation();
     initJourney();
+    initTimelineProgress();
+    initMagnetic();
+    initTilt();
+    initCursorGlow();
 });

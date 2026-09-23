@@ -80,8 +80,21 @@
     --t-normal: 260ms cubic-bezier(0.4, 0, 0.2, 1);
     --t-slow:   480ms cubic-bezier(0.4, 0, 0.2, 1);
 
+    /* Motion. One curve for things arriving, one with overshoot for things
+       settling. Everything that moves sits behind prefers-reduced-motion. */
+    --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --t-reveal:    720ms;
+
     --container: 1200px;
     --nav-h: 60px;
+}
+
+/* Typed so conic borders can rotate by animating the angle itself. */
+@property --angle {
+    syntax: '<angle>';
+    inherits: false;
+    initial-value: 0deg;
 }
 
 /* ==========================================================================
@@ -169,7 +182,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     mask-image: radial-gradient(ellipse 90% 55% at 50% 0%, #000 10%, transparent 72%);
 }
 
-/* Two slow aurora blobs */
+/* Three slow aurora blobs */
 .bg-aurora { overflow: hidden; }
 .bg-aurora span {
     position: absolute;
@@ -188,6 +201,29 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     top: 4%; right: 6%;
     background: radial-gradient(circle, rgba(139, 92, 246, 0.10), transparent 70%);
 }
+.bg-aurora span:nth-child(3) {
+    width: 420px; height: 420px;
+    top: 38%; left: 36%;
+    background: radial-gradient(circle, rgba(52, 211, 153, 0.06), transparent 70%);
+    background: radial-gradient(circle, color-mix(in srgb, var(--hue-3) 6%, transparent), transparent 70%);
+    opacity: 0.4;
+}
+
+/* Cursor glow. A soft amber pool that trails the pointer; JS moves it with
+   `translate` and only switches it on for a fine pointer. */
+.bg-spotlight {
+    position: fixed;
+    top: 0; left: 0;
+    width: 640px; height: 640px;
+    margin: -320px 0 0 -320px;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--ac-soft), transparent 62%);
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0;
+    transition: opacity 600ms var(--ease-out);
+}
+.bg-spotlight.is-on { opacity: 0.45; }
 
 /* Film grain */
 .bg-grain {
@@ -199,15 +235,20 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 @media (prefers-reduced-motion: no-preference) {
     .bg-aurora span:nth-child(1) { animation: drift-a 24s ease-in-out infinite alternate; }
     .bg-aurora span:nth-child(2) { animation: drift-b 30s ease-in-out infinite alternate; }
+    .bg-aurora span:nth-child(3) { animation: drift-c 38s ease-in-out infinite alternate; }
 }
 
 @keyframes drift-a {
     from { transform: translate3d(0, 0, 0) scale(1); }
-    to   { transform: translate3d(90px, 60px, 0) scale(1.12); }
+    to   { transform: translate3d(130px, 80px, 0) scale(1.14); }
 }
 @keyframes drift-b {
     from { transform: translate3d(0, 0, 0) scale(1.08); }
-    to   { transform: translate3d(-70px, 40px, 0) scale(1); }
+    to   { transform: translate3d(-110px, 60px, 0) scale(1); }
+}
+@keyframes drift-c {
+    from { transform: translate3d(0, 0, 0) scale(1); }
+    to   { transform: translate3d(-90px, -70px, 0) scale(1.18); }
 }
 
 /* Everything above the ambient layers. .footer is listed explicitly because it
@@ -259,11 +300,23 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 }
 
 .eyebrow {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
     font-size: var(--fs-2xs);
     letter-spacing: 0.09em;
     color: var(--ac);
     margin-bottom: var(--sp-3);
+}
+/* Leading rule — the same idea as .hero-eyebrow on projects.html. It draws
+   in from the left when the eyebrow reveals. */
+.eyebrow::before {
+    content: '';
+    flex-shrink: 0;
+    width: 20px; height: 1px;
+    background: var(--ac);
+    transform-origin: left center;
+    transition: scale 640ms var(--ease-out) 120ms;
 }
 
 .section-head { margin-bottom: var(--sp-7); max-width: 720px; }
@@ -306,9 +359,9 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     border-bottom: 1px solid var(--line-strong);
     transition: color var(--t-fast), border-color var(--t-fast);
 }
-.head-link svg { transition: transform var(--t-fast); }
+.head-link svg { transition: translate 320ms var(--ease-spring); }
 .head-link:hover { color: var(--ac); border-bottom-color: var(--line-accent); }
-.head-link:hover svg { transform: translateX(4px); }
+.head-link:hover svg { translate: 4px 0; }
 
 /* ==========================================================================
    Navigation
@@ -339,6 +392,54 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     gap: 24px;
 }
 
+/* Floating pill. At the top of the page the bar looks exactly as it always
+   has; once scrolled, the bar itself goes clear and the container eases into
+   a centred glass capsule. Desktop only — the mobile panel hangs off a
+   full-width bar. */
+@media (min-width: 901px) {
+    .nav-container {
+        border: 1px solid transparent;
+        transition: max-width var(--t-slow), height var(--t-slow), margin var(--t-slow),
+                    padding var(--t-slow), border-radius var(--t-slow),
+                    background-color var(--t-normal), border-color var(--t-normal),
+                    box-shadow var(--t-normal);
+    }
+    .navbar.is-scrolled {
+        background: transparent;
+        border-bottom-color: transparent;
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+    }
+    .navbar.is-scrolled .nav-container {
+        max-width: 980px;
+        height: 52px;
+        margin-top: 10px;
+        padding: 0 4px 0 18px;
+        border-radius: 99px;
+        border-color: var(--line);
+        background-color: rgba(13, 13, 16, 0.74);
+        backdrop-filter: blur(18px) saturate(150%);
+        -webkit-backdrop-filter: blur(18px) saturate(150%);
+        box-shadow: 0 14px 40px -18px rgba(0, 0, 0, 0.9);
+    }
+}
+
+/* Reading progress. JS drives `scale`; it sits on the bar's bottom edge, or
+   on the page's top edge once the bar has become a pill. */
+.scroll-progress {
+    position: absolute;
+    left: 0; right: 0; bottom: -1px;
+    height: 2px;
+    background: linear-gradient(to right, var(--ac-glow), var(--ac));
+    box-shadow: 0 0 10px var(--ac-glow);
+    transform-origin: left center;
+    scale: 0 1;
+    pointer-events: none;
+}
+@media (min-width: 901px) {
+    .scroll-progress { top: 0; bottom: auto; }
+}
+
 .nav-logo {
     display: inline-flex;
     align-items: center;
@@ -351,8 +452,11 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     color: var(--text-hi);
 }
 .nav-logo span { color: var(--ac); }
+/* Shared element: the "S." morphs between pages on a cross-document view
+   transition. Browsers without them simply navigate. */
+.nav-logo { view-transition-name: site-logo; }
 
-.nav-links { display: flex; align-items: center; gap: 6px; }
+.nav-links { position: relative; display: flex; align-items: center; gap: 6px; }
 
 .nav-link {
     position: relative;
@@ -365,14 +469,21 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 }
 .nav-link:hover { color: var(--text-hi); background: rgba(255, 255, 255, 0.045); }
 .nav-link.active { color: var(--text-hi); }
-.nav-link.active::after {
-    content: '';
+
+/* One underline for the whole bar. It glides to whichever link is hovered,
+   then settles back on the scrollspy's active link. */
+.nav-indicator {
     position: absolute;
-    left: 13px; right: 13px; bottom: 1px;
-    height: 1px;
+    left: 0; bottom: 1px;
+    width: 0; height: 1px;
     background: var(--ac);
     box-shadow: 0 0 8px var(--ac-glow);
+    pointer-events: none;
+    opacity: 0;
+    transition: translate 420ms var(--ease-out), width 420ms var(--ease-out),
+                opacity var(--t-normal);
 }
+.nav-indicator.is-on { opacity: 1; }
 
 .nav-cta {
     display: inline-flex;
@@ -386,7 +497,8 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     border: 1px solid var(--line-strong);
     border-radius: 99px;
     background: rgba(255, 255, 255, 0.03);
-    transition: border-color var(--t-fast), background var(--t-fast), color var(--t-fast);
+    transition: border-color var(--t-fast), background var(--t-fast), color var(--t-fast),
+                translate 450ms var(--ease-spring);
 }
 .nav-cta:hover {
     border-color: var(--line-accent);
@@ -412,6 +524,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
    Hero
    ========================================================================== */
 .hero {
+    position: relative;
     min-height: 100vh;
     display: flex;
     align-items: center;
@@ -473,6 +586,16 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     color: var(--text-hi);
     margin-bottom: 24px;
 }
+/* Each line is its own clipping mask, so the words can rise up into place
+   from below the baseline. The padding/negative margin pair keeps
+   descenders inside the mask without changing the line spacing. */
+.hero-title .line {
+    display: block;
+    overflow: hidden;
+    padding-bottom: 0.12em;
+    margin-bottom: -0.12em;
+}
+.hero-title .line-inner { display: block; }
 .hero-highlight {
     color: var(--ac);
     position: relative;
@@ -486,6 +609,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     background: var(--ac);
     opacity: 0.22;
     border-radius: 2px;
+    transform-origin: left center;
 }
 
 .hero-subtitle {
@@ -499,6 +623,9 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .hero-buttons { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 40px; }
 
 .btn {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
     display: inline-flex;
     align-items: center;
     gap: 9px;
@@ -507,9 +634,45 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     font-size: var(--fs-xs);
     font-weight: 500;
     transition: transform var(--t-fast), background var(--t-fast),
-                border-color var(--t-fast), color var(--t-fast), box-shadow var(--t-fast);
+                border-color var(--t-fast), color var(--t-fast), box-shadow var(--t-fast),
+                translate 450ms var(--ease-spring);
 }
 .btn svg { transition: transform var(--t-fast); }
+
+/* Diagonal shine. It only animates on the way in; on the way out it snaps
+   back while already off the button's edge, so it never sweeps backwards. */
+.btn-primary::after,
+.cred-download::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.42) 50%, transparent 70%);
+    translate: -110% 0;
+    pointer-events: none;
+}
+.btn-primary:hover::after,
+.cred-download:hover::after {
+    translate: 110% 0;
+    transition: translate 760ms var(--ease-out);
+}
+
+/* Gradient hairline that lights on hover, masked down to a 1px ring. */
+.btn-secondary::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    padding: 1px;
+    border-radius: inherit;
+    background: linear-gradient(120deg, var(--ac), transparent 55%, var(--ac-glow));
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: 0;
+    transition: opacity var(--t-normal);
+    pointer-events: none;
+}
+.btn-secondary:hover::before { opacity: 1; }
 
 .btn-primary {
     background: var(--ac);
@@ -550,9 +713,13 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     margin-bottom: 30px;
     max-width: 540px;
 }
-.terminal-prompt { color: var(--ac); }
+.terminal-prompt { color: var(--ac); text-shadow: 0 0 14px var(--ac-glow); }
 .terminal-text { color: var(--text-mid); }
-.terminal-cursor { color: var(--ac); animation: blink 1.05s step-end infinite; }
+.terminal-cursor {
+    color: var(--ac);
+    text-shadow: 0 0 10px var(--ac-glow);
+    animation: blink 1.05s step-end infinite;
+}
 
 @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
 
@@ -568,7 +735,8 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     border-radius: var(--radius-sm);
     color: var(--text-mid);
     transition: color var(--t-fast), border-color var(--t-fast),
-                background var(--t-fast), transform var(--t-fast);
+                background var(--t-fast), transform var(--t-fast),
+                translate 450ms var(--ease-spring);
 }
 .hero-social-link:hover {
     color: var(--ac);
@@ -581,6 +749,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .hero-sidebar { display: flex; flex-direction: column; gap: 14px; }
 
 .profile-card {
+    position: relative;
     display: flex;
     align-items: center;
     gap: 14px;
@@ -623,6 +792,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 }
 
 .panel {
+    position: relative;
     background: var(--bg-card);
     border: 1px solid var(--line);
     border-radius: var(--radius-lg);
@@ -667,6 +837,8 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
    Stats bar
    ========================================================================== */
 .stats-bar {
+    position: relative;
+    overflow: hidden;
     border-top: 1px solid var(--line);
     border-bottom: 1px solid var(--line);
     background: rgba(255, 255, 255, 0.012);
@@ -694,6 +866,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     letter-spacing: -0.03em;
     color: var(--text-hi);
     line-height: 1.1;
+    transform-origin: left center;
 }
 .stat-label {
     color: var(--ac);
@@ -735,6 +908,22 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     height: 2px;
     background: linear-gradient(to right, transparent, var(--ac));
     box-shadow: 0 0 12px var(--ac-glow);
+    transform-origin: left center;
+    transition: scale 1100ms var(--ease-out) 260ms;
+}
+
+/* Selection pill. One element slides between stages instead of each stage
+   switching its own background on and off. */
+.rail-indicator {
+    position: absolute;
+    top: 0; left: 0;
+    width: 0; height: 0;
+    border-radius: var(--radius-md);
+    background: rgba(255, 255, 255, 0.035);
+    border: 1px solid var(--line);
+    pointer-events: none;
+    transition: translate 460ms var(--ease-out), width 460ms var(--ease-out),
+                height 460ms var(--ease-out);
 }
 
 .stage {
@@ -763,6 +952,17 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     background: var(--ac);
     border-color: var(--ac);
     box-shadow: 0 0 0 4px var(--ac-soft), 0 0 16px var(--ac-glow);
+}
+/* Radar ping on "you are here" — shared with the current role's marker. */
+.stage[data-state="current"] .stage-dot::after,
+.exp-item[data-state="current"] .exp-marker span::after {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: 50%;
+    border: 1px solid var(--ac);
+    opacity: 0;
+    pointer-events: none;
 }
 .stage:hover .stage-dot { border-color: rgba(255, 255, 255, 0.45); }
 .stage.is-active .stage-dot {
@@ -807,12 +1007,28 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 }
 .stage-panel[hidden] { display: none; }
 
+/* Direction-aware switch: select() stamps data-dir, so the incoming panel
+   slides in from the side the user is moving toward. Its contents then
+   cascade in, each child carrying its own --i. Keyed off .in-view so the
+   first panel plays this when the section arrives, not at page load. */
+.stage-panel[data-dir="next"] { --panel-x: 20px; }
+.stage-panel[data-dir="prev"] { --panel-x: -20px; }
 @media (prefers-reduced-motion: no-preference) {
-    .stage-panel.is-active { animation: panel-in 320ms cubic-bezier(0.16, 1, 0.3, 1); }
+    .stage-panels.in-view .stage-panel.is-active {
+        animation: panel-in 440ms var(--ease-out);
+    }
+    .stage-panels.in-view .stage-panel.is-active .cascade {
+        animation: rise-in 480ms var(--ease-out) backwards;
+        animation-delay: calc(70ms + min(var(--i, 0), 12) * 40ms);
+    }
 }
 @keyframes panel-in {
-    from { opacity: 0; transform: translateY(10px); }
-    to   { opacity: 1; transform: none; }
+    from { opacity: 0; translate: var(--panel-x, 0px) 8px; }
+    to   { opacity: 1; translate: 0 0; }
+}
+@keyframes rise-in {
+    from { opacity: 0; translate: 0 10px; }
+    to   { opacity: 1; translate: 0 0; }
 }
 
 .panel-main { padding: var(--sp-6); }
@@ -948,7 +1164,8 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     border: 1px solid var(--line);
     color: var(--text-mid);
     background: rgba(255, 255, 255, 0.03);
-    transition: border-color var(--t-fast), color var(--t-fast);
+    transition: border-color var(--t-fast), color var(--t-fast),
+                translate var(--t-fast), box-shadow var(--t-normal);
 }
 .chip-tool.is-owned {
     color: var(--text-hi);
@@ -962,6 +1179,9 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     background: transparent;
 }
 .chip-tool:hover { border-color: var(--line-accent); color: var(--ac); }
+@media (hover: hover) and (pointer: fine) {
+    .chip-tool:hover { translate: 0 -1px; box-shadow: 0 6px 16px -8px var(--ac-glow); }
+}
 
 /* ==========================================================================
    Experience
@@ -969,10 +1189,29 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .experience { padding: var(--sp-section) 0; border-top: 1px solid var(--line); }
 
 .exp-list {
+    position: relative;
     display: flex;
     flex-direction: column;
     gap: 0;
     margin-bottom: 64px;
+}
+
+/* Scroll-linked path. JS measures first-to-last marker into --exp-top /
+   --exp-len and feeds scroll position into --exp-p, so the line fills as
+   the reader moves down the list. Markers paint above it. */
+.exp-list::before {
+    content: '';
+    position: absolute;
+    left: 19px;
+    top: var(--exp-top, 0px);
+    width: 2px;
+    height: var(--exp-len, 0px);
+    border-radius: 2px;
+    background: linear-gradient(to bottom, var(--ac), var(--ac-glow));
+    box-shadow: 0 0 10px var(--ac-glow);
+    transform-origin: top center;
+    scale: 1 var(--exp-p, 0);
+    pointer-events: none;
 }
 
 .exp-item { display: grid; grid-template-columns: 40px 1fr; gap: 20px; }
@@ -996,7 +1235,22 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     box-shadow: 0 0 0 4px rgba(240, 180, 41, 0.12), 0 0 14px var(--ac-glow);
 }
 
-.exp-body { padding: 20px 0 30px; }
+.exp-body { position: relative; isolation: isolate; padding: 20px 0 30px; }
+/* Hover lifts a surface in behind the role without moving its text. */
+.exp-body::before {
+    content: '';
+    position: absolute;
+    inset: 8px -18px 14px;
+    z-index: -1;
+    border-radius: var(--radius-lg);
+    background: rgba(255, 255, 255, 0.022);
+    border: 1px solid var(--line);
+    opacity: 0;
+    scale: 0.985;
+    transition: opacity var(--t-normal), scale 420ms var(--ease-out);
+    pointer-events: none;
+}
+.exp-item:hover .exp-body::before { opacity: 1; scale: 1; }
 
 .exp-top {
     display: flex;
@@ -1108,6 +1362,8 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 
 .cert-list { display: flex; flex-direction: column; gap: 1px; }
 .cert-list li {
+    position: relative;
+    overflow: hidden;
     display: flex;
     align-items: baseline;
     justify-content: space-between;
@@ -1118,7 +1374,18 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     border-radius: var(--radius-sm);
     transition: border-color var(--t-fast);
 }
+.cert-list li::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 2px;
+    background: var(--ac);
+    box-shadow: 0 0 10px var(--ac-glow);
+    translate: -100% 0;
+    transition: translate 320ms var(--ease-out);
+}
 .cert-list li:hover { border-color: var(--line-strong); }
+.cert-list li:hover::before { translate: 0 0; }
 .cert-name { font-size: var(--fs-xs); color: var(--text-hi); }
 .cert-issuer {
     white-space: nowrap;
@@ -1135,6 +1402,9 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 }
 
 .cred-download {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
     display: inline-flex;
     align-items: center;
     gap: 9px;
@@ -1261,15 +1531,17 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     background: var(--bg-card);
     border: 1px solid var(--line);
     border-radius: var(--radius-lg);
-    transition: border-color var(--t-normal), background var(--t-normal), transform var(--t-normal);
+    transition: border-color var(--t-normal), background var(--t-normal),
+                translate 420ms var(--ease-out);
 }
 .proj-card:hover {
     border-color: var(--line-strong);
     background: var(--bg-card-hover);
-    transform: translateY(-3px);
+    translate: 0 -3px;
 }
 
 .proj-card-feature {
+    position: relative;
     grid-column: span 3;
     background:
         radial-gradient(760px 200px at 0% 0%, rgba(240, 180, 41, 0.07), transparent 70%),
@@ -1277,6 +1549,42 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 }
 .proj-card-feature .proj-title { font-size: var(--fs-xl); }
 .proj-card-feature .proj-desc { max-width: 70ch; }
+
+/* Rotating amber arc around the flagship project. */
+.feature-ring {
+    position: absolute;
+    inset: -1px;
+    padding: 1px;
+    border-radius: inherit;
+    background: conic-gradient(from var(--angle), transparent 0 64%, var(--ac-glow) 80%, var(--ac) 88%, transparent 96%);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: 0.8;
+    pointer-events: none;
+}
+
+/* Decorative sparkline, desktop only. pathLength="1" on the line lets the
+   draw-in run on a 0–1 dash offset whatever the path's real length. */
+.feature-spark { display: none; }
+@media (min-width: 1081px) {
+    .proj-card-feature { padding-right: calc(34% + var(--sp-6)); }
+    .feature-spark {
+        display: block;
+        position: absolute;
+        right: var(--sp-6); top: 50%;
+        width: 32%; max-width: 340px;
+        height: auto;
+        translate: 0 -50%;
+        color: var(--ac);
+        overflow: visible;
+        pointer-events: none;
+    }
+}
+.spark-line { stroke-dasharray: 1; stroke-dashoffset: 0; transition: stroke-dashoffset 1600ms var(--ease-out) 300ms; }
+.spark-area { transition: opacity 900ms var(--ease-out) 900ms; }
+.spark-dot, .spark-ping { transform-box: fill-box; transform-origin: center; }
+.spark-dot { transition: opacity 300ms var(--ease-out) 1700ms; }
 
 .proj-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .proj-kind {
@@ -1321,7 +1629,9 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     border-bottom: 1px solid transparent;
     transition: border-color var(--t-fast);
 }
+.proj-link svg { transition: translate 320ms var(--ease-spring); }
 .proj-link:hover { border-bottom-color: var(--line-accent); }
+.proj-link:hover svg { translate: 2px -2px; }
 
 /* ==========================================================================
    Footer
@@ -1364,7 +1674,8 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     color: var(--text-mid);
     background: rgba(255, 255, 255, 0.022);
     transition: color var(--t-fast), border-color var(--t-fast),
-                background var(--t-fast), transform var(--t-fast);
+                background var(--t-fast), transform var(--t-fast),
+                translate 450ms var(--ease-spring);
 }
 .footer-link:hover {
     color: var(--ac);
@@ -1386,34 +1697,338 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     color: var(--text-lo);
 }
 
+/* Giant closing wordmark. Pure ornament: aria-hidden, and a fill that fades
+   to nothing so it reads as texture rather than a second heading. */
+.footer-wordmark {
+    margin-top: var(--sp-6);
+    font-family: var(--font-display);
+    font-size: clamp(3.4rem, 13.5vw, 11.5rem);
+    font-weight: 700;
+    line-height: 0.82;
+    letter-spacing: -0.055em;
+    text-align: center;
+    white-space: nowrap;
+    background: linear-gradient(to bottom, var(--line-strong), transparent 88%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    user-select: none;
+    pointer-events: none;
+}
+
+/* ==========================================================================
+   Tool marquee — the stack, on a slow loop
+   ========================================================================== */
+.tool-marquee {
+    padding: var(--sp-4) 0;
+    border-bottom: 1px solid var(--line);
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 10%, #000 90%, transparent);
+    mask-image: linear-gradient(to right, transparent, #000 10%, #000 90%, transparent);
+}
+/* Static by default: one centred, wrapped row. JS clones the list and adds
+   .is-animated only when motion is allowed. */
+.marquee-track { display: flex; justify-content: center; }
+.marquee-group {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    row-gap: var(--sp-2);
+    font-family: var(--font-mono);
+    font-size: var(--fs-3xs);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-lo);
+}
+.marquee-group li {
+    display: inline-flex;
+    align-items: center;
+    gap: 22px;
+    padding-right: 22px;
+    white-space: nowrap;
+}
+.marquee-group li::after {
+    content: '';
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: var(--ac);
+    box-shadow: 0 0 8px var(--ac-glow);
+}
+.marquee-track.is-animated { justify-content: flex-start; width: max-content; }
+.marquee-track.is-animated .marquee-group { flex-wrap: nowrap; }
+
+/* ==========================================================================
+   Pointer effects — spotlight, tilt
+   Classes are added by JS; the hover states only exist for a fine pointer,
+   so a tap on a phone never leaves a glow stuck on a card.
+   ========================================================================== */
+.spot { position: relative; isolation: isolate; }
+.spot::before,
+.spot::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity var(--t-normal);
+}
+/* Fill: under the content, over the card's own background. */
+.spot::before {
+    z-index: -1;
+    background: radial-gradient(440px circle at var(--mx, 50%) var(--my, 50%), var(--ac-soft), transparent 62%);
+}
+/* Border: the same radial, masked down to a 1px ring. */
+.spot::after {
+    padding: 1px;
+    background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 50%), var(--ac-glow), transparent 70%);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+}
+@media (hover: hover) and (pointer: fine) {
+    .spot:hover::before { opacity: 0.55; }
+    .spot:hover::after  { opacity: 1; }
+}
+
+.tilt { position: relative; }
+.tilt::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: radial-gradient(360px circle at var(--gx, 50%) var(--gy, 50%), rgba(255, 255, 255, 0.07), transparent 60%);
+    opacity: 0;
+    transition: opacity var(--t-normal);
+    pointer-events: none;
+}
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+    .tilt {
+        transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+        transition: transform 700ms var(--ease-out);
+    }
+    .tilt.is-tilting { transition-duration: 160ms; }
+    .tilt.is-tilting::after { opacity: 1; }
+}
+
+/* Slow amber arc around the snapshot panel. Sits just inside the hairline
+   because the panel clips its overflow. */
+.snapshot::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    padding: 1px;
+    border-radius: inherit;
+    background: conic-gradient(from var(--angle), transparent 0 70%, var(--ac-glow) 84%, var(--ac) 90%, transparent 97%);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: 0.7;
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* ==========================================================================
+   Hero scroll cue — desktop only, gone once the page moves
+   ========================================================================== */
+.scroll-cue { display: none; }
+@media (min-width: 901px) and (min-height: 720px) {
+    .scroll-cue {
+        position: absolute;
+        left: 50%; bottom: 18px;
+        translate: -50% 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--sp-2);
+        font-family: var(--font-mono);
+        font-size: var(--fs-3xs);
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--text-lo);
+        transition: opacity var(--t-slow);
+        pointer-events: none;
+    }
+    .scroll-cue i {
+        position: relative;
+        display: block;
+        width: 1px; height: 30px;
+        overflow: hidden;
+        background: var(--line-strong);
+    }
+    .scroll-cue i::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(to bottom, transparent, var(--ac));
+        translate: 0 -100%;
+    }
+    .scrolled .scroll-cue { opacity: 0; }
+}
+
 /* ==========================================================================
    Scroll reveal
    ========================================================================== */
+/* JS adds .reveal, sets --reveal-delay (stagger within a set, never across
+   the whole page), then adds .in-view on intersect. Once the entrance has
+   finished JS drops .reveal again, so the element's own hover transitions
+   come back; .in-view stays as the hook for one-shot effects below. */
 @media (prefers-reduced-motion: no-preference) {
     .reveal {
         opacity: 0;
-        transform: translateY(18px);
-        transition: opacity 620ms cubic-bezier(0.16, 1, 0.3, 1),
-                    transform 620ms cubic-bezier(0.16, 1, 0.3, 1);
+        translate: 0 var(--reveal-y, 18px);
+        transition: opacity var(--t-reveal) var(--ease-out),
+                    translate var(--t-reveal) var(--ease-out),
+                    filter var(--t-reveal) var(--ease-out);
+        transition-delay: var(--reveal-delay, 0ms);
     }
-    .reveal.in-view { opacity: 1; transform: none; }
+    .reveal.in-view { opacity: 1; translate: 0 0; }
+    .reveal-blur { filter: blur(10px); }
+    .reveal-blur.in-view { filter: blur(0); }
 
-    .hero-tags, .hero-title, .hero-subtitle,
-    .hero-buttons, .hero-terminal, .hero-social, .hero-sidebar {
-        animation: fade-up 720ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    .eyebrow.reveal:not(.in-view)::before { scale: 0 1; }
+    .footer-wordmark { --reveal-y: 30%; }
+
+    /* Small things inside a revealed block cascade in just after it.
+       `backwards` fill, not `both`: a finished animation must not pin
+       `translate`, or the chips' hover lift would stop working. */
+    .in-view .stagger {
+        animation: rise-in 520ms var(--ease-out) backwards;
+        animation-delay: calc(var(--reveal-delay, 0ms) + 180ms + min(var(--i, 0), 12) * 45ms);
     }
-    .hero-title     { animation-delay: 70ms; }
-    .hero-subtitle  { animation-delay: 140ms; }
-    .hero-buttons   { animation-delay: 210ms; }
-    .hero-terminal  { animation-delay: 280ms; }
-    .hero-social    { animation-delay: 350ms; }
-    .hero-sidebar   { animation-delay: 200ms; }
+
+    /* --- Hero entrance --- */
+    .hero-tags, .hero-subtitle,
+    .hero-buttons, .hero-terminal, .hero-social, .hero-sidebar {
+        animation: fade-up var(--t-reveal) var(--ease-out) both;
+    }
+    .hero-subtitle  { animation-delay: 380ms; }
+    .hero-buttons   { animation-delay: 460ms; }
+    .hero-terminal  { animation-delay: 540ms; }
+    .hero-social    { animation-delay: 620ms; }
+    .hero-sidebar   { animation-delay: 240ms; }
+
+    /* Kinetic headline: each line rises inside its own mask. */
+    .hero-title .line-inner { animation: line-up 900ms var(--ease-out) both; }
+    .hero-title .line:nth-child(1) .line-inner { animation-delay: 80ms; }
+    .hero-title .line:nth-child(2) .line-inner { animation-delay: 170ms; }
+    .hero-title .line:nth-child(3) .line-inner { animation-delay: 260ms; }
+
+    /* Then the underline draws, and one sheen crosses "act on." */
+    .hero-highlight::after { animation: draw-x 700ms var(--ease-out) 900ms both; }
+    .hero-highlight {
+        background: linear-gradient(105deg, var(--ac) 38%, var(--ac-bright) 46%,
+                                    var(--text-hi) 50%, var(--ac-bright) 54%, var(--ac) 62%);
+        background-size: 260% 100%;
+        background-position: 100% 0;
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        animation: sheen 1500ms var(--ease-out) 1250ms both;
+    }
+
+    .panel-dot { animation: breathe 2.8s ease-in-out infinite; }
+    .snapshot::before { animation: spin-angle 9s linear infinite; }
+    .scroll-cue i::after { animation: cue-fall 2s var(--ease-out) infinite; }
+
+    /* --- Stats: one beam across the top hairline, numbers settle --- */
+    .stats-bar::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0;
+        width: 32%; height: 1px;
+        background: linear-gradient(to right, transparent, var(--ac), transparent);
+        box-shadow: 0 0 12px var(--ac-glow);
+        opacity: 0;
+        pointer-events: none;
+    }
+    .stats-bar.in-view::before { animation: beam 1700ms var(--ease-out) 250ms both; }
+    .stat-value.is-landed { animation: settle 560ms var(--ease-spring); }
+
+    /* --- Marquee --- */
+    .marquee-track.is-animated { animation: marquee 46s linear infinite; }
+    .tool-marquee:hover .marquee-track { animation-play-state: paused; }
+
+    /* --- Journey --- */
+    .rail-wrap.reveal:not(.in-view) .rail-fill { scale: 0 1; }
+    .stage[data-state="current"] .stage-dot::after,
+    .exp-item[data-state="current"] .exp-marker span::after {
+        animation: ping 2.4s var(--ease-out) infinite;
+    }
+
+    /* --- Projects: sparkline draws itself, end point pulses --- */
+    .proj-card-feature.reveal:not(.in-view) .spark-line { stroke-dashoffset: 1; }
+    .proj-card-feature.reveal:not(.in-view) .spark-area,
+    .proj-card-feature.reveal:not(.in-view) .spark-dot { opacity: 0; }
+    .spark-ping { animation: ping 2.4s var(--ease-out) infinite; }
+    .feature-ring { animation: spin-angle 7s linear infinite; }
+
+    /* --- Footer: slow looping sheen on the ask --- */
+    .footer-highlight {
+        background: linear-gradient(105deg, var(--ac) 38%, var(--ac-bright) 46%,
+                                    var(--text-hi) 50%, var(--ac-bright) 54%, var(--ac) 62%);
+        background-size: 300% 100%;
+        background-position: 100% 0;
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        animation: sheen-loop 7s ease-in-out infinite;
+    }
+
+    /* --- Cross-page view transition: old page fades, new one rises --- */
+    ::view-transition-old(root) { animation: vt-out 240ms var(--ease-out) both; }
+    ::view-transition-new(root) { animation: vt-in 460ms var(--ease-out) both; }
+    ::view-transition-group(site-logo) { animation-duration: 520ms; animation-timing-function: var(--ease-out); }
 }
+
+@view-transition { navigation: auto; }
 
 @keyframes fade-up {
-    from { opacity: 0; transform: translateY(16px); }
-    to   { opacity: 1; transform: none; }
+    from { opacity: 0; translate: 0 16px; }
+    to   { opacity: 1; translate: 0 0; }
 }
+@keyframes line-up {
+    from { translate: 0 110%; }
+    to   { translate: 0 0; }
+}
+@keyframes draw-x {
+    from { scale: 0 1; }
+    to   { scale: 1 1; }
+}
+@keyframes sheen {
+    from { background-position: 100% 0; }
+    to   { background-position: 0% 0; }
+}
+@keyframes sheen-loop {
+    0%        { background-position: 100% 0; }
+    55%, 100% { background-position: 0% 0; }
+}
+@keyframes breathe {
+    0%, 100% { scale: 1;    opacity: 1; }
+    50%      { scale: 1.45; opacity: 0.55; }
+}
+@keyframes spin-angle { to { --angle: 360deg; } }
+@keyframes cue-fall {
+    from { translate: 0 -100%; }
+    to   { translate: 0 100%; }
+}
+@keyframes beam {
+    0%   { opacity: 1; translate: -100% 0; }
+    80%  { opacity: 1; }
+    100% { opacity: 0; translate: 320% 0; }
+}
+@keyframes settle {
+    from { scale: 0.9; }
+    to   { scale: 1; }
+}
+@keyframes marquee { to { translate: -50% 0; } }
+@keyframes ping {
+    0%   { opacity: 0.85; scale: 1; }
+    100% { opacity: 0;    scale: 2.8; }
+}
+@keyframes vt-out { to   { opacity: 0; } }
+@keyframes vt-in  { from { opacity: 0; translate: 0 14px; } }
 
 /* ==========================================================================
    Responsive
@@ -1429,8 +2044,11 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 }
 
 @media (max-width: 900px) {
+    /* Closed = invisible AND `visibility: hidden`, so the links drop out of
+       the tab order. Visibility flips instantly on open and only after the
+       fade on close. */
     .nav-links {
-        display: none;
+        display: flex;
         position: absolute;
         top: var(--nav-h);
         left: 0; right: 0;
@@ -1442,10 +2060,23 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
         backdrop-filter: blur(18px);
         -webkit-backdrop-filter: blur(18px);
         border-bottom: 1px solid var(--line);
+        opacity: 0;
+        visibility: hidden;
+        translate: 0 -10px;
+        pointer-events: none;
+        transition: opacity var(--t-normal), translate 360ms var(--ease-out),
+                    visibility 0s linear var(--t-normal);
     }
-    .nav-links.mobile-open { display: flex; }
+    .nav-links.mobile-open {
+        opacity: 1;
+        visibility: visible;
+        translate: 0 0;
+        pointer-events: auto;
+        transition: opacity var(--t-normal), translate 360ms var(--ease-out), visibility 0s;
+    }
     .nav-link { padding: 11px 12px; font-size: var(--fs-sm); }
-    .nav-link.active::after { display: none; }
+    .nav-indicator { display: none; }
+    .nav-cta { margin-left: auto; }
     .mobile-toggle { display: flex; }
     .mobile-toggle.active span:nth-child(1) { transform: translateY(6.5px) rotate(45deg); }
     .mobile-toggle.active span:nth-child(2) { opacity: 0; }
@@ -1478,6 +2109,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
         width: 2px; max-width: none;
         height: 22px;
         background: linear-gradient(to bottom, transparent, var(--ac));
+        transform-origin: center top;
     }
     .stage {
         flex-direction: row;
@@ -1487,7 +2119,6 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
         padding: 12px 12px 12px 4px;
     }
     .stage-dot { position: absolute; top: 50%; left: -26px; transform: translateY(-50%); }
-    .stage.is-active { background: rgba(255, 255, 255, 0.035); }
     .stage-name { flex: 1; }
     .stage-state { flex-shrink: 0; }
 
@@ -1499,6 +2130,17 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
     .cred-block:last-child { grid-column: auto; }
 
     .exp-item { grid-template-columns: 28px 1fr; gap: 14px; }
+    .exp-list::before { left: 13px; }
+    .exp-body::before { inset: 8px -12px 14px; }
+}
+
+@media (max-width: 900px) and (prefers-reduced-motion: no-preference) {
+    .rail-wrap.reveal:not(.in-view) .rail-fill { scale: 1 0; }
+    /* Links arrive one after another as the panel drops open. */
+    .nav-links.mobile-open .nav-link {
+        animation: rise-in 380ms var(--ease-out) backwards;
+        animation-delay: calc(50ms + var(--i, 0) * 45ms);
+    }
 }
 
 @media (max-width: 640px) {
@@ -1535,5 +2177,8 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
         scroll-behavior: auto !important;
     }
     html { scroll-behavior: auto; }
-    .reveal { opacity: 1; transform: none; }
+    .reveal { opacity: 1; translate: none; filter: none; }
+    ::view-transition-group(*),
+    ::view-transition-old(*),
+    ::view-transition-new(*) { animation: none !important; }
 }

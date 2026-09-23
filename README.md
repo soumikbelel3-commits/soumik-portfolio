@@ -23,6 +23,15 @@ a colour or type change is a one-file edit.
   `--text-dim` is ornament only — never put it on text.
 - **Spacing**: `--sp-1` … `--sp-9`. Section padding, card insets and gaps of
   12px or more come from the scale; smaller optical values stay raw.
+- **Motion**: `--ease-out`, `--ease-spring` and `--t-reveal` sit in `:root`
+  beside the other tokens. Every animation lives inside
+  `@media (prefers-reduced-motion: no-preference)` or checks `REDUCE_MOTION`
+  in `script.js`, and the global reduced-motion block stays last in
+  `styles.css`. Pointer effects (spotlight, tilt, magnetic pull, cursor glow)
+  also require a fine pointer (`FINE_POINTER`). Animate `transform`/`opacity`
+  only, using the individual `translate` / `rotate` / `scale` properties so a
+  hover lift and a magnetic pull never overwrite each other. Canvas loops pause
+  while offscreen or while the tab is hidden.
 
 ## Run locally
 Open `index.html` directly, or serve the folder:

@@ -25,13 +25,14 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=8">
+    <link rel="stylesheet" href="styles.css?v=9">
 </head>
 <body>
     <!-- Ambient background layers -->
     <div class="bg-glow" aria-hidden="true"></div>
     <div class="bg-grid" aria-hidden="true"></div>
-    <div class="bg-aurora" aria-hidden="true"><span></span><span></span></div>
+    <div class="bg-aurora" aria-hidden="true"><span></span><span></span><span></span></div>
+    <div class="bg-spotlight" aria-hidden="true"></div>
     <div class="bg-grain" aria-hidden="true"></div>
 
     <a href="#main" class="skip-link">Skip to content</a>
@@ -46,6 +47,7 @@
                 <a href="#skills" class="nav-link">Skills</a>
                 <a href="projects.html" class="nav-link">Projects</a>
                 <a href="#contact" class="nav-link">Contact</a>
+                <span class="nav-indicator" aria-hidden="true"></span>
             </div>
             <a href="Soumik_resume.pdf" class="nav-cta" download>
                 Résumé
@@ -55,6 +57,7 @@
                 <span></span><span></span><span></span>
             </button>
         </div>
+        <div class="scroll-progress" aria-hidden="true"></div>
     </nav>
 
     <main id="main">
@@ -70,9 +73,9 @@
                         <span class="tag-goal">AI Engineer</span>
                     </div>
                     <h1 class="hero-title">
-                        I turn raw data into<br>
-                        decisions people can<br>
-                        actually <span class="hero-highlight">act on.</span>
+                        <span class="line"><span class="line-inner">I turn raw data into</span></span>
+                        <span class="line"><span class="line-inner">decisions people can</span></span>
+                        <span class="line"><span class="line-inner">actually <span class="hero-highlight">act on.</span></span></span>
                     </h1>
                     <p class="hero-subtitle">
                         Data analyst and full-stack developer. Python, SQL and Power BI for the
@@ -152,6 +155,7 @@
                     </div>
                 </aside>
             </div>
+            <div class="scroll-cue" aria-hidden="true"><span>Scroll</span><i></i></div>
         </section>
 
         <!-- ============ STATS ============ -->
@@ -180,6 +184,30 @@
             </div>
         </section>
 
+        <!-- ============ TOOL MARQUEE ============ -->
+        <section class="tool-marquee" aria-label="Tools I work with">
+            <div class="marquee-track">
+                <ul class="marquee-group">
+                    <li>Python</li>
+                    <li>SQL</li>
+                    <li>Pandas</li>
+                    <li>NumPy</li>
+                    <li>Power BI</li>
+                    <li>Tableau</li>
+                    <li>Excel</li>
+                    <li>scikit-learn</li>
+                    <li>statsmodels</li>
+                    <li>Plotly</li>
+                    <li>FastAPI</li>
+                    <li>React</li>
+                    <li>PostgreSQL</li>
+                    <li>Redis</li>
+                    <li>TimescaleDB</li>
+                    <li>Git</li>
+                </ul>
+            </div>
+        </section>
+
         <!-- ============ JOURNEY ============ -->
         <section class="journey" id="journey">
             <div class="section-container">
@@ -197,6 +225,7 @@
                         <div class="rail-track" aria-hidden="true">
                             <div class="rail-fill"></div>
                         </div>
+                        <span class="rail-indicator" aria-hidden="true"></span>
 
                         <button class="stage is-active" role="tab" id="stage-tab-1" aria-controls="stage-panel-1" aria-selected="true" tabindex="0" data-stage="1" data-state="current" data-cluster="analytics">
                             <span class="stage-dot" aria-hidden="true"></span>
@@ -728,6 +757,19 @@
 
                 <div class="proj-grid">
                     <article class="proj-card proj-card-feature">
+                        <span class="feature-ring" aria-hidden="true"></span>
+                        <svg class="feature-spark" viewBox="0 0 320 120" fill="none" aria-hidden="true" focusable="false">
+                            <defs>
+                                <linearGradient id="sparkFill" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0" stop-color="currentColor" stop-opacity="0.22"/>
+                                    <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+                                </linearGradient>
+                            </defs>
+                            <path class="spark-area" fill="url(#sparkFill)" d="M4 96 L30 88 L52 92 L76 74 L98 80 L122 62 L146 70 L168 52 L190 58 L214 38 L236 46 L258 30 L282 36 L306 16 L306 120 L4 120 Z"/>
+                            <path class="spark-line" pathLength="1" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 96 L30 88 L52 92 L76 74 L98 80 L122 62 L146 70 L168 52 L190 58 L214 38 L236 46 L258 30 L282 36 L306 16"/>
+                            <circle class="spark-ping" cx="306" cy="16" r="4" stroke="currentColor" stroke-width="1"/>
+                            <circle class="spark-dot" cx="306" cy="16" r="3.5" fill="currentColor"/>
+                        </svg>
                         <div class="proj-top"><span class="proj-kind">Full-stack platform</span><span class="proj-stage">Stage 03 work</span></div>
                         <h3 class="proj-title">Omni Terminal — Financial Intelligence Platform</h3>
                         <p class="proj-desc">Full-stack web terminal for Indian retail traders — real-time market charts, stock screeners and an analytics dashboard, built and deployed end to end.</p>
@@ -817,9 +859,10 @@
                 <span>Data Analyst → AI Engineer</span>
                 <span>Kolkata, West Bengal, India</span>
             </div>
+            <div class="footer-wordmark" aria-hidden="true">Soumik Belel</div>
         </div>
     </footer>
 
-    <script src="script.js?v=8"></script>
+    <script src="script.js?v=9"></script>
 </body>
 </html>
