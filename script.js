@@ -109,85 +109,325 @@ function watchSize(canvas, onResize) {
 const Bus = { focusCluster: null };
 
 /* ==========================================================================
-   Hero snapshot canvas — slow orbital rings
+   Hero snapshot canvas — Neural Data Pipeline Visualizer
+   Simulates real-time Kafka event streaming -> Spark distributed processing
+   -> Lakehouse feature store -> Deep learning & neural inference.
    ========================================================================== */
+let snapshotActiveStack = 'all';
+
 function initSpiralCanvas() {
     const canvas = document.getElementById('spiralCanvas');
     if (!canvas) return;
 
     const ctx = canvas.getContext('2d');
     let W = 0, H = 0, time = 0;
+    let pointerX = -1000, pointerY = -1000;
 
     const ac = token('--ac', '#F0B429');
-    const hues = [
-        token('--hue-1', '#F0B429'), token('--hue-2', '#A78BFA'),
-        token('--hue-3', '#34D399'), token('--hue-4', '#38BDF8'),
-        token('--hue-5', '#F472B6')
-    ];
+    const cStream = token('--hue-4', '#38BDF8');   // Cyan: Streaming / Kafka / Big Data
+    const cCompute = token('--ac', '#F0B429');     // Amber: Spark / Compute / Lakehouse
+    const cNeural = token('--hue-5', '#F472B6');    // Pink/Rose: PyTorch / Neural Nets
+    const cViolet = token('--hue-2', '#A78BFA');    // Violet: Transformer / LLMs
+
+    // Track mouse over canvas
+    canvas.addEventListener('mousemove', (e) => {
+        const r = canvas.getBoundingClientRect();
+        pointerX = e.clientX - r.left;
+        pointerY = e.clientY - r.top;
+    });
+    canvas.addEventListener('mouseleave', () => {
+        pointerX = -1000;
+        pointerY = -1000;
+    });
+
+    // 4-Stage Architecture Nodes
+    let nodes = [];
+    let edges = [];
+    let packets = [];
+    let sparks = [];
+
+    function setupTopology() {
+        if (!W || !H) return;
+        nodes = [
+            // Tier 0: Ingestion (Kafka Stream)
+            { x: W * 0.12, y: H * 0.32, r: 4.5, tier: 0, color: cStream },
+            { x: W * 0.12, y: H * 0.68, r: 4.5, tier: 0, color: cStream },
+
+            // Tier 1: Spark Distributed Cluster
+            { x: W * 0.38, y: H * 0.22, r: 5, tier: 1, color: cStream },
+            { x: W * 0.38, y: H * 0.50, r: 5.5, tier: 1, color: cCompute },
+            { x: W * 0.38, y: H * 0.78, r: 5, tier: 1, color: cStream },
+
+            // Tier 2: Lakehouse / Feature Storage
+            { x: W * 0.64, y: H * 0.34, r: 5.5, tier: 2, color: cCompute },
+            { x: W * 0.64, y: H * 0.66, r: 5.5, tier: 2, color: cViolet },
+
+            // Tier 3: Deep Learning & Neural Inference
+            { x: W * 0.85, y: H * 0.26, r: 5, tier: 3, color: cViolet },
+            { x: W * 0.85, y: H * 0.50, r: 6.5, tier: 3, color: cNeural },
+            { x: W * 0.85, y: H * 0.74, r: 5, tier: 3, color: cViolet },
+
+            // Output Inference Peak
+            { x: W * 0.96, y: H * 0.50, r: 3.5, tier: 4, color: ac }
+        ];
+
+        // Edges connecting tiers
+        edges = [
+            // Tier 0 -> Tier 1
+            [0, 2], [0, 3], [1, 3], [1, 4],
+            // Intra-cluster mesh
+            [2, 3], [3, 4],
+            // Tier 1 -> Tier 2
+            [2, 5], [3, 5], [3, 6], [4, 6],
+            // Tier 2 intra
+            [5, 6],
+            // Tier 2 -> Tier 3
+            [5, 7], [5, 8], [6, 8], [6, 9],
+            // Tier 3 intra
+            [7, 8], [8, 9],
+            // Tier 3 -> Output
+            [7, 10], [8, 10], [9, 10]
+        ];
+
+        // Build continuous pathways for data packets
+        const pathways = [
+            [0, 2, 5, 7, 10],
+            [0, 3, 5, 8, 10],
+            [1, 3, 6, 8, 10],
+            [1, 4, 6, 9, 10],
+            [0, 3, 6, 8, 10],
+            [1, 3, 5, 7, 10],
+            [0, 2, 3, 5, 8, 10],
+            [1, 4, 3, 6, 9, 10]
+        ];
+
+        // 20 flowing streaming data packets
+        packets = [];
+        for (let i = 0; i < 20; i++) {
+            packets.push({
+                pathway: pathways[i % pathways.length],
+                progress: Math.random(),
+                speed: 0.005 + Math.random() * 0.006,
+                size: 1.8 + Math.random() * 1.3
+            });
+        }
+    }
 
     function resize() {
         const d = fitCanvas(canvas, ctx);
         W = d.w; H = d.h;
-        // Resizing the backing store clears it, so repaint now rather than
-        // waiting on the next animation frame.
+        setupTopology();
         render();
     }
 
     function render() {
         ctx.clearRect(0, 0, W, H);
-        const cx = W / 2, ccy = H / 2;
-        const scale = Math.min(W, H) / 130;
+        if (!nodes.length) return;
 
-        // Concentric rings
-        for (let i = 0; i < 5; i++) {
-            const r = (14 + i * 11) * scale;
+        // Subtle background grid lines
+        ctx.save();
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.025)';
+        ctx.lineWidth = 1;
+        const step = 20;
+        for (let x = step; x < W; x += step) {
             ctx.beginPath();
-            ctx.arc(cx, ccy, r, 0, Math.PI * 2);
-            ctx.strokeStyle = rgba(ac, 0.07 + i * 0.015);
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, H);
+            ctx.stroke();
+        }
+        for (let y = step; y < H; y += step) {
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(W, y);
+            ctx.stroke();
+        }
+        ctx.restore();
+
+        // Draw connections / edges
+        for (let i = 0; i < edges.length; i++) {
+            const [na, nb] = edges[i];
+            const a = nodes[na];
+            const b = nodes[nb];
+
+            let alpha = 0.09;
+            if (snapshotActiveStack === 'bigdata' && (a.tier <= 1 || b.tier <= 1)) alpha = 0.28;
+            if (snapshotActiveStack === 'datasci' && ((a.tier >= 1 && a.tier <= 2) || (b.tier >= 1 && b.tier <= 2))) alpha = 0.28;
+            if (snapshotActiveStack === 'aiml' && (a.tier >= 2 || b.tier >= 2)) alpha = 0.28;
+
+            ctx.beginPath();
+            ctx.moveTo(a.x, a.y);
+            ctx.lineTo(b.x, b.y);
+            ctx.strokeStyle = rgba(b.color, alpha);
             ctx.lineWidth = 1;
             ctx.stroke();
         }
 
-        // One dot per career stage, each on its own orbit
-        for (let i = 0; i < 5; i++) {
-            const orbit = (18 + i * 11) * scale;
-            const angle = time * (0.34 - i * 0.04) + (i * Math.PI * 2) / 5;
-            const x = cx + Math.cos(angle) * orbit;
-            const y = ccy + Math.sin(angle) * orbit;
-            const color = hues[i];
+        // Draw and update packets (streaming data & neural activations)
+        for (let i = 0; i < packets.length; i++) {
+            const p = packets[i];
+            p.progress += p.speed;
+            if (p.progress >= 1) {
+                p.progress = 0;
+                // Add spark at the output node
+                sparks.push({
+                    x: nodes[10].x,
+                    y: nodes[10].y,
+                    r: 2,
+                    maxR: 10 + Math.random() * 6,
+                    alpha: 0.85,
+                    color: Math.random() > 0.5 ? ac : cNeural
+                });
+            }
 
-            const glow = ctx.createRadialGradient(x, y, 0, x, y, 8 * scale);
-            glow.addColorStop(0, rgba(color, 0.28));
-            glow.addColorStop(1, rgba(color, 0));
+            // Interpolate position along the multi-point pathway
+            const path = p.pathway;
+            const segCount = path.length - 1;
+            const scaledProgress = p.progress * segCount;
+            const currentSeg = Math.min(Math.floor(scaledProgress), segCount - 1);
+            const segT = scaledProgress - currentSeg;
+
+            const nFrom = nodes[path[currentSeg]];
+            const nTo = nodes[path[currentSeg + 1]];
+
+            const px = nFrom.x + (nTo.x - nFrom.x) * segT;
+            const py = nFrom.y + (nTo.y - nFrom.y) * segT;
+
+            // Packet color shifts from Big Data Cyan -> Amber Lakehouse -> Neural Rose
+            let pColor = cStream;
+            if (p.progress > 0.35 && p.progress <= 0.7) {
+                pColor = cCompute;
+            } else if (p.progress > 0.7) {
+                pColor = cNeural;
+            }
+
+            // Mouse proximity repulsion/acceleration
+            const dx = px - pointerX;
+            const dy = py - pointerY;
+            const dist = Math.hypot(dx, dy);
+            let glowSize = p.size * 2.5;
+            if (dist < 45) {
+                glowSize *= 1.8;
+            }
+
+            // Particle glow
+            const glow = ctx.createRadialGradient(px, py, 0, px, py, glowSize);
+            glow.addColorStop(0, rgba(pColor, 0.7));
+            glow.addColorStop(1, rgba(pColor, 0));
             ctx.beginPath();
-            ctx.arc(x, y, 8 * scale, 0, Math.PI * 2);
+            ctx.arc(px, py, glowSize, 0, Math.PI * 2);
             ctx.fillStyle = glow;
             ctx.fill();
 
+            // Particle core
             ctx.beginPath();
-            ctx.arc(x, y, (i === 0 ? 3 : 2.2) * scale, 0, Math.PI * 2);
-            ctx.fillStyle = rgba(color, i === 0 ? 0.95 : 0.6);
+            ctx.arc(px, py, p.size, 0, Math.PI * 2);
+            ctx.fillStyle = rgba(pColor, 0.95);
             ctx.fill();
         }
 
-        // Core
-        const core = ctx.createRadialGradient(cx, ccy, 0, cx, ccy, 16 * scale);
-        core.addColorStop(0, rgba(ac, 0.35));
-        core.addColorStop(1, rgba(ac, 0));
-        ctx.beginPath();
-        ctx.arc(cx, ccy, 16 * scale, 0, Math.PI * 2);
-        ctx.fillStyle = core;
-        ctx.fill();
+        // Draw Sparks (inference activations)
+        for (let i = sparks.length - 1; i >= 0; i--) {
+            const s = sparks[i];
+            s.r += 0.7;
+            s.alpha -= 0.04;
+            if (s.alpha <= 0) {
+                sparks.splice(i, 1);
+                continue;
+            }
+            ctx.beginPath();
+            ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+            ctx.strokeStyle = rgba(s.color, s.alpha);
+            ctx.lineWidth = 1;
+            ctx.stroke();
+        }
 
-        ctx.beginPath();
-        ctx.arc(cx, ccy, 3.4 * scale, 0, Math.PI * 2);
-        ctx.fillStyle = ac;
-        ctx.fill();
+        // Draw Nodes
+        for (let i = 0; i < nodes.length; i++) {
+            const n = nodes[i];
+            const dx = n.x - pointerX;
+            const dy = n.y - pointerY;
+            const isHovered = Math.hypot(dx, dy) < 22;
 
+            // Node pulse
+            const pulse = Math.sin(time * 2.5 + i * 0.8) * 0.15;
+            const curR = n.r + (isHovered ? 2.5 : pulse);
+
+            let nodeAlpha = 0.85;
+            let haloAlpha = 0.25;
+            if (snapshotActiveStack === 'bigdata' && n.tier > 1) {
+                nodeAlpha = 0.35; haloAlpha = 0.08;
+            } else if (snapshotActiveStack === 'datasci' && (n.tier < 1 || n.tier > 2)) {
+                nodeAlpha = 0.35; haloAlpha = 0.08;
+            } else if (snapshotActiveStack === 'aiml' && n.tier < 2) {
+                nodeAlpha = 0.35; haloAlpha = 0.08;
+            }
+
+            // Outer halo
+            const halo = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, curR * 3);
+            halo.addColorStop(0, rgba(n.color, isHovered ? 0.6 : haloAlpha));
+            halo.addColorStop(1, rgba(n.color, 0));
+            ctx.beginPath();
+            ctx.arc(n.x, n.y, curR * 3, 0, Math.PI * 2);
+            ctx.fillStyle = halo;
+            ctx.fill();
+
+            // Node ring
+            ctx.beginPath();
+            ctx.arc(n.x, n.y, curR, 0, Math.PI * 2);
+            ctx.fillStyle = rgba(n.color, nodeAlpha);
+            ctx.fill();
+
+            // Inner bright core
+            ctx.beginPath();
+            ctx.arc(n.x, n.y, curR * 0.45, 0, Math.PI * 2);
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fill();
+        }
     }
 
     watchSize(canvas, resize);
-    if (!REDUCE_MOTION) runWhileVisible(canvas, () => { render(); time += 0.016; });
+    if (!REDUCE_MOTION) {
+        runWhileVisible(canvas, () => {
+            render();
+            time += 0.02;
+        });
+    } else {
+        setupTopology();
+        render();
+    }
+}
+
+/* ==========================================================================
+   Hero snapshot tech tabs filter
+   ========================================================================== */
+function initSnapshotTabs() {
+    const tabs = document.querySelectorAll('.snapshot-stack-nav .stack-tab');
+    const groups = document.querySelectorAll('.snapshot-stack-body .snap-group');
+    if (!tabs.length || !groups.length) return;
+
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            const stack = tab.getAttribute('data-stack');
+            snapshotActiveStack = stack;
+
+            tabs.forEach(t => {
+                const isActive = t === tab;
+                t.classList.toggle('is-active', isActive);
+                t.setAttribute('aria-selected', isActive ? 'true' : 'false');
+            });
+
+            groups.forEach(group => {
+                const cat = group.getAttribute('data-category');
+                if (stack === 'all') {
+                    group.classList.remove('is-hidden');
+                } else if (cat === stack) {
+                    group.classList.remove('is-hidden');
+                } else {
+                    group.classList.add('is-hidden');
+                }
+            });
+        });
+    });
 }
 
 /* Drive a per-frame callback only while its canvas is on screen and the tab
@@ -208,10 +448,10 @@ function runWhileVisible(canvas, tick) {
 }
 
 /* ==========================================================================
-   Skills constellation
-   Five cluster hubs mirroring the five career stages, each with the tools and
-   ML methods that belong to that stage orbiting it. Filled node = working with
-   it; hollow dashed node = still learning it.
+   Skills constellation ($1B Tier Neural Topology)
+   Five cluster hubs mirroring the five career stages, each with its production
+   tools and frontier research orbiting it. Full bidirectional telemetry,
+   spring physics, HUD inspection, and real-time omni-search filtering.
    ========================================================================== */
 function initSkillsConstellation() {
     const canvas = document.getElementById('skillsConstellation');
@@ -220,27 +460,60 @@ function initSkillsConstellation() {
     const ctx = canvas.getContext('2d');
 
     const CLUSTERS = [
-        { key: 'analytics',   label: 'Analytics',  hue: token('--hue-1', '#F0B429'), stage: '01' },
-        { key: 'science',     label: 'Science',    hue: token('--hue-2', '#A78BFA'), stage: '02' },
-        { key: 'engineering', label: 'Data Eng',   hue: token('--hue-3', '#34D399'), stage: '03' },
-        { key: 'bigdata',     label: 'Big Data',   hue: token('--hue-4', '#38BDF8'), stage: '04' },
-        { key: 'ai',          label: 'AI',         hue: token('--hue-5', '#F472B6'), stage: '05' }
+        { key: 'analytics',   label: 'Analytics',  hue: token('--hue-1', '#F0B429'), stage: '01', role: 'Data Analyst', desc: 'Core analytical pipelines, statistical reporting, SQL modeling & executive BI' },
+        { key: 'science',     label: 'Science',    hue: token('--hue-2', '#A78BFA'), stage: '02', role: 'Data Scientist', desc: 'Supervised/unsupervised statistical machine learning, churn prediction & predictive inference' },
+        { key: 'engineering', label: 'Data Eng',   hue: token('--hue-3', '#34D399'), stage: '03', role: 'Data Engineer', desc: 'Relational data modeling, asynchronous REST microservices & low-latency caching' },
+        { key: 'bigdata',     label: 'Big Data',   hue: token('--hue-4', '#38BDF8'), stage: '04', role: 'Big Data Specialist', desc: 'Distributed computing, real-time event streaming, modern analytics engineering & cloud data lakes' },
+        { key: 'ai',          label: 'AI & ML',    hue: token('--hue-5', '#F472B6'), stage: '05', role: 'AI/ML Engineer', desc: 'Deep neural networks, foundation transformer models, tensor math & agentic RAG' }
     ];
 
-    // Each stage leads with its machine-learning skill: a narrow canvas keeps
-    // only the first three of a cluster, and ML has to survive that cut.
     const TOOLS = {
-        analytics:   [['Regression', 1], ['Python', 1], ['SQL', 1], ['Power BI', 1], ['Tableau', 1]],
-        science:     [['Clustering', 1], ['scikit-learn', 1], ['XGBoost', 0],
-                      ['Classification', 1], ['Forecasting', 0]],
-        engineering: [['Feature store', 0], ['PostgreSQL', 1], ['FastAPI', 1], ['Redis', 1], ['Docker', 0]],
-        bigdata:     [['MLlib', 0], ['Spark', 0], ['Kafka', 0], ['Streaming', 0], ['AWS', 0]],
-        ai:          [['Deep learning', 0], ['LLMs', 0], ['RAG', 0], ['PyTorch', 0], ['MLOps', 0]]
+        analytics: [
+            ['Python', 1, 'Core analytical workflows, data manipulation, automation & scripts'],
+            ['SQL', 1, 'Complex analytical queries, window functions, CTEs & data modeling'],
+            ['Power BI', 1, 'Executive KPI dashboards, DAX measures & star modeling'],
+            ['Tableau', 1, 'Interactive business intelligence & visual storytelling'],
+            ['Regression', 1, 'Linear & logistic statistical modeling for continuous trends'],
+            ['Excel / PQ', 1, 'Power Query ETL, financial modeling & pivot tables']
+        ],
+        science: [
+            ['scikit-learn', 1, 'Machine learning modeling, classification, regression & clustering'],
+            ['Clustering', 1, 'K-Means, DBSCAN & customer behavioral cohort segmentation'],
+            ['Classification', 1, 'Binary & multi-class decision boundaries & risk scoring'],
+            ['XGBoost', 0, 'Gradient boosted trees & hyperparameter optimization'],
+            ['Forecasting', 0, 'ARIMA, SARIMAX, Prophet & time-series decomposition'],
+            ['Pandas', 1, 'High-throughput tabular dataframe wrangling & matrix operations']
+        ],
+        engineering: [
+            ['PostgreSQL', 1, 'Relational modeling, indexing, CTEs & JSONB data storage'],
+            ['FastAPI', 1, 'Asynchronous REST APIs, Pydantic data schemas & microservices'],
+            ['Redis', 1, 'High-speed in-memory caching & session state storage'],
+            ['Docker', 0, 'Containerization & reproducible multi-stage deployment images'],
+            ['Feature store', 0, 'Low-latency ML feature catalog & offline/online sync'],
+            ['Airflow', 0, 'DAG workflow scheduling & pipeline orchestration']
+        ],
+        bigdata: [
+            ['Spark', 0, 'Distributed memory transformations & large-scale data analytics'],
+            ['Kafka', 0, 'Real-time event streaming, consumer groups & message queues'],
+            ['Streaming', 0, 'Real-time structured streaming & sliding event windows'],
+            ['AWS', 0, 'Cloud computing, S3 object storage & serverless ETL pipelines'],
+            ['MLlib', 0, 'Scalable machine learning algorithms on distributed memory'],
+            ['dbt', 0, 'Analytics engineering, modular SQL models & automated testing']
+        ],
+        ai: [
+            ['PyTorch', 0, 'Dynamic tensor computation, autograd & neural network design'],
+            ['Deep learning', 0, 'Multi-layer perceptrons, backpropagation & loss curves'],
+            ['Transformers', 0, 'Hugging Face attention architectures & fine-tuning'],
+            ['LLMs', 0, 'Large language model agents, prompts & reasoning pipelines'],
+            ['RAG', 0, 'Retrieval-augmented generation with vector databases'],
+            ['MLOps', 0, 'Model registry, continuous monitoring & performance drift alerts']
+        ]
     };
-    const COMPACT_AT = 620;   // canvas px below which a cluster shows three tools
-    const SHOWN_COMPACT = 3;
 
-    // Build node + edge lists.
+    const COMPACT_AT = 620;
+    const SHOWN_COMPACT = 4;
+
+    // Build node + edge lists
     const nodes = [];
     const edges = [];
     const hubIndex = {};
@@ -248,77 +521,146 @@ function initSkillsConstellation() {
     CLUSTERS.forEach((c, ci) => {
         hubIndex[c.key] = nodes.length;
         nodes.push({
-            label: c.label, sub: 'Stage ' + c.stage, cluster: c.key,
-            color: c.hue, r: 27, hub: true, owned: true, ci
+            label: c.label,
+            role: c.role,
+            desc: c.desc,
+            sub: 'Stage ' + c.stage + ' · ' + c.role,
+            cluster: c.key,
+            stage: c.stage,
+            color: c.hue,
+            r: 28,
+            hub: true,
+            owned: true,
+            ci
         });
     });
 
     CLUSTERS.forEach((c) => {
         const hi = hubIndex[c.key];
-        TOOLS[c.key].forEach(([name, owned], li) => {
+        TOOLS[c.key].forEach(([name, owned, roleDesc], li) => {
             const idx = nodes.length;
             nodes.push({
-                label: name, sub: owned ? 'working with it' : 'learning it',
-                cluster: c.key, color: c.hue, r: 14,
-                hub: false, owned: !!owned, ci: nodes[hi].ci,
+                label: name,
+                role: c.role,
+                desc: roleDesc || (owned ? 'Production competency' : 'Active research & development'),
+                sub: owned ? 'Production · ' + name : 'Pipeline · ' + name,
+                cluster: c.key,
+                stage: c.stage,
+                color: c.hue,
+                r: 13,
+                hub: false,
+                owned: !!owned,
+                ci: nodes[hi].ci,
                 slim: li >= SHOWN_COMPACT
             });
-            edges.push([hi, idx, !!owned]);
+            edges.push([hi, idx, !!owned, false]);
         });
     });
 
-    // Chain the hubs in career order — the path, drawn as a shape.
+    // Chain the hubs in career order — the golden path pipeline spine
     for (let i = 0; i < CLUSTERS.length - 1; i++) {
-        edges.push([hubIndex[CLUSTERS[i].key], hubIndex[CLUSTERS[i + 1].key], i === 0]);
+        edges.push([hubIndex[CLUSTERS[i].key], hubIndex[CLUSTERS[i + 1].key], true, true]);
     }
 
     const adj = nodes.map(() => new Set());
     edges.forEach(([a, b]) => { adj[a].add(b); adj[b].add(a); });
 
+    // Background drifting celestial stars
+    const stars = [];
+    for (let s = 0; s < 36; s++) {
+        stars.push({
+            x: Math.random(),
+            y: Math.random(),
+            r: 0.6 + Math.random() * 1.2,
+            speed: 0.3 + Math.random() * 0.7,
+            phase: Math.random() * Math.PI * 2,
+            alpha: 0.15 + Math.random() * 0.35
+        });
+    }
+
     let W = 0, H = 0, time = 0;
     let mouseX = -1, mouseY = -1, hoverIdx = -1, dragIdx = -1;
-    let focused = null;   // cluster key highlighted from the journey section
-    let compact = false;  // narrow canvas: fewer tools, smaller nodes
+    let externalHoverIdx = -1; // Triggered by hovering cards/chips below
+    let focused = null;        // cluster key highlighted
+    let searchQuery = '';      // Active search query
+    let activeQuickFilter = 'all'; // 'all' | 'owned' | 'learning' | 'ml' | 'engineering'
+    let compact = false;
     let scale = 1;
-    // Intro fade, 0 → 1. Held at 0 until the map first scrolls into view so
-    // the bloom is the first thing anyone sees of it.
     let intro = REDUCE_MOTION ? 1 : 0;
     let introStart = 0;
 
-    nodes.forEach(n => { n.x = 0; n.y = 0; n.vx = 0; n.vy = 0; n.hx = 0; n.hy = 0; });
+    nodes.forEach(n => { n.x = 0; n.y = 0; n.vx = 0; n.vy = 0; n.hx = 0; n.hy = 0; n.pulse = 0; });
+
+    // HUD Elements
+    const hudCard = document.getElementById('constellationHud');
+    const hudStage = document.getElementById('hudStage');
+    const hudStatus = document.getElementById('hudStatus');
+    const hudTitle = document.getElementById('hudTitle');
+    const hudDesc = document.getElementById('hudDesc');
+    const hudMeta = document.getElementById('hudMeta');
+    const nodeCountEl = document.getElementById('constellationNodeCount');
+
+    function updateHud(n) {
+        if (!hudCard) return;
+        if (n) {
+            if (hudStage) hudStage.textContent = n.hub ? `STAGE ${n.stage} · HUB` : `STAGE ${n.stage} · ${n.cluster.toUpperCase()}`;
+            if (hudStatus) {
+                hudStatus.textContent = n.owned ? 'PRODUCTION' : 'IN PIPELINE';
+                hudStatus.style.color = n.owned ? '#34D399' : '#F0B429';
+                hudStatus.style.borderColor = n.owned ? 'rgba(52, 211, 153, 0.3)' : 'rgba(240, 180, 41, 0.3)';
+                hudStatus.style.background = n.owned ? 'rgba(52, 211, 153, 0.12)' : 'rgba(240, 180, 41, 0.12)';
+            }
+            if (hudTitle) hudTitle.textContent = n.label;
+            if (hudDesc) hudDesc.textContent = n.desc || n.sub;
+            if (hudMeta) {
+                const conns = adj[nodes.indexOf(n)] ? adj[nodes.indexOf(n)].size : 0;
+                hudMeta.textContent = `${n.role} · ${conns} Signal Connections · Drag to move`;
+            }
+            hudCard.style.borderColor = rgba(n.color, 0.4);
+            hudCard.style.boxShadow = `0 16px 36px -8px rgba(0, 0, 0, 0.7), 0 0 20px -4px ${rgba(n.color, 0.25)}`;
+        } else {
+            if (hudStage) hudStage.textContent = focused ? `STAGE · ${focused.toUpperCase()}` : 'TOPOLOGY OVERVIEW';
+            if (hudStatus) {
+                hudStatus.textContent = 'ONLINE';
+                hudStatus.style.color = '#34D399';
+                hudStatus.style.borderColor = 'rgba(52, 211, 153, 0.3)';
+                hudStatus.style.background = 'rgba(52, 211, 153, 0.12)';
+            }
+            if (hudTitle) hudTitle.textContent = focused ? CLUSTERS.find(c => c.key === focused)?.label + ' Network' : 'Interactive Topology';
+            if (hudDesc) {
+                hudDesc.textContent = focused
+                    ? CLUSTERS.find(c => c.key === focused)?.desc
+                    : 'Hover any node or cluster to inspect technical capabilities, signal routes, and production telemetry.';
+            }
+            if (hudMeta) hudMeta.textContent = 'Drag nodes · Hover clusters · Click tabs to isolate';
+            hudCard.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+            hudCard.style.boxShadow = '0 16px 36px -8px rgba(0, 0, 0, 0.7)';
+        }
+    }
 
     function layout() {
         const cx = W / 2, cyy = H / 2;
         const base = Math.min(W, H);
 
-        // A narrow canvas cannot hold thirty labelled nodes, so it shows the
-        // first three tools of each cluster at a reduced scale instead.
         compact = W < COMPACT_AT;
-        scale = compact ? Math.max(0.8, Math.min(1, base / 420)) : 1;
+        scale = compact ? Math.max(0.75, Math.min(1, base / 440)) : 1;
         nodes.forEach(n => {
             n.off = compact && n.slim;
-            n.r = (n.hub ? 27 : 14) * scale;
+            n.r = (n.hub ? 28 : 13) * scale;
         });
-        // A node the resize just dropped must not stay hovered.
+
         if (hoverIdx >= 0 && nodes[hoverIdx].off) hoverIdx = -1;
         if (dragIdx >= 0 && nodes[dragIdx].off) dragIdx = -1;
 
-        // The canvas is far wider than it is tall, so a circular map would sit in
-        // a small disc with empty gutters either side. x stretches to fill that
-        // room; y stays tight, because height is what actually runs out.
-        const sx = Math.max(1, Math.min((W / H) * 0.78, 1.9));
-        // A narrow canvas pulls the clusters back in — spread that far apart,
-        // neighbouring clusters start touching.
-        const ringX = base * (compact ? 0.235 : 0.28) * sx;
-        const ringY = H * 0.145;
-        const rLeaf = 14 * scale;
-        // One orbit, pushed out as far as the canvas allows and no further: a
-        // label needs the node's radius, its own line, and a hair of margin.
-        const labelRoom = rLeaf + 15 * scale + 2;
-        const orbit = Math.max((27 + 14) * scale + 8, Math.min(
-            H * 0.235,
+        const sx = Math.max(1, Math.min((W / H) * 0.85, 2.0));
+        const ringX = base * (compact ? 0.25 : 0.30) * sx;
+        const ringY = H * (compact ? 0.16 : 0.18);
+        const rLeaf = 13 * scale;
+        const labelRoom = rLeaf + 16 * scale;
+        const orbit = Math.max((28 + 14) * scale + 6, Math.min(
+            H * 0.25,
             H / 2 - ringY - labelRoom,
-            (W / 2 - ringX - rLeaf - 4) / sx
+            (W / 2 - ringX - rLeaf - 8) / sx
         ));
 
         CLUSTERS.forEach((c, i) => {
@@ -328,10 +670,7 @@ function initSkillsConstellation() {
             hub.hy = cyy + Math.sin(a) * ringY;
 
             const leaves = nodes.filter(n => !n.hub && !n.off && n.cluster === c.key);
-            // Fan the tools outward from the centre, away from the hub, on a
-            // single arc. Neighbouring labels alternate above and below the node
-            // so a wide one never lands on the one beside it.
-            const spread = leaves.length > 4 ? 1.7 : 1.1;
+            const spread = leaves.length > 5 ? 1.85 : 1.3;
             leaves.forEach((leaf, li) => {
                 leaf.labelUp = li % 2 === 1;
                 const la = a + (li - (leaves.length - 1) / 2) * (spread / leaves.length);
@@ -349,8 +688,6 @@ function initSkillsConstellation() {
         const d = fitCanvas(canvas, ctx);
         W = d.w; H = d.h;
         layout();
-        // Resizing the backing store clears it, so repaint now rather than
-        // waiting on the next animation frame.
         render();
     }
 
@@ -359,14 +696,28 @@ function initSkillsConstellation() {
         const t = e.touches ? e.touches[0] : e;
         return { x: t.clientX - rect.left, y: t.clientY - rect.top };
     }
+
     function nearest(px, py) {
         let idx = -1, best = Infinity;
         nodes.forEach((n, i) => {
             if (n.off) return;
             const d = Math.hypot(px - n.x, py - n.y);
-            if (d < n.r + 8 && d < best) { best = d; idx = i; }
+            if (d < n.r + 14 && d < best) { best = d; idx = i; }
         });
         return idx;
+    }
+
+    // Bidirectional sync: Highlight chip in stack lists below
+    function syncHighlightChip(node) {
+        const label = node ? node.label.toLowerCase() : null;
+        document.querySelectorAll('.chip-tool').forEach(chip => {
+            const skill = (chip.dataset.skill || chip.textContent).trim().toLowerCase();
+            if (label && (skill.includes(label) || label.includes(skill))) {
+                chip.classList.add('is-highlighted');
+            } else {
+                chip.classList.remove('is-highlighted');
+            }
+        });
     }
 
     canvas.addEventListener('mousemove', (e) => {
@@ -376,16 +727,42 @@ function initSkillsConstellation() {
             n.x = p.x; n.y = p.y; n.vx = 0; n.vy = 0;
             canvas.style.cursor = 'grabbing';
         } else {
+            const prev = hoverIdx;
             hoverIdx = nearest(p.x, p.y);
             canvas.style.cursor = hoverIdx >= 0 ? 'grab' : 'default';
+            if (hoverIdx !== prev) {
+                if (hoverIdx >= 0) {
+                    updateHud(nodes[hoverIdx]);
+                    syncHighlightChip(nodes[hoverIdx]);
+                } else if (externalHoverIdx < 0) {
+                    updateHud(null);
+                    syncHighlightChip(null);
+                }
+            }
         }
     });
-    canvas.addEventListener('mouseleave', () => { mouseX = -1; mouseY = -1; hoverIdx = -1; });
+
+    canvas.addEventListener('mouseleave', () => {
+        mouseX = -1; mouseY = -1; hoverIdx = -1;
+        if (externalHoverIdx < 0) {
+            updateHud(null);
+            syncHighlightChip(null);
+        }
+    });
+
     canvas.addEventListener('mousedown', (e) => {
         const p = pointer(e);
         const i = nearest(p.x, p.y);
-        if (i >= 0) { dragIdx = i; canvas.style.cursor = 'grabbing'; }
+        if (i >= 0) {
+            dragIdx = i;
+            canvas.style.cursor = 'grabbing';
+            // Click to isolate cluster or highlight
+            if (nodes[i].hub) {
+                setClusterFocus(nodes[i].cluster);
+            }
+        }
     });
+
     window.addEventListener('mouseup', () => { dragIdx = -1; });
 
     canvas.addEventListener('touchmove', (e) => {
@@ -396,25 +773,195 @@ function initSkillsConstellation() {
             e.preventDefault();
         }
     }, { passive: false });
+
     canvas.addEventListener('touchstart', (e) => {
         const p = pointer(e);
         const i = nearest(p.x, p.y);
-        if (i >= 0) { dragIdx = i; hoverIdx = i; }
+        if (i >= 0) {
+            dragIdx = i; hoverIdx = i;
+            updateHud(nodes[i]);
+            syncHighlightChip(nodes[i]);
+        }
     }, { passive: true });
+
     window.addEventListener('touchend', () => { dragIdx = -1; });
 
-    // Journey section drives this. Repaint immediately so the response to a
-    // click never waits on the next animation frame.
-    Bus.focusCluster = (key) => { focused = key; render(); };
+    function setClusterFocus(clusterKey) {
+        focused = (focused === clusterKey) ? null : clusterKey;
 
+        // Sync cluster filter buttons
+        document.querySelectorAll('.c-filter-btn').forEach(btn => {
+            const c = btn.dataset.cluster;
+            const active = (focused === null && c === 'all') || (focused === c);
+            btn.classList.toggle('is-active', active);
+            btn.setAttribute('aria-selected', active ? 'true' : 'false');
+        });
+
+        // Sync stack groups below: subtle spotlight
+        document.querySelectorAll('.stack-group').forEach(grp => {
+            if (!focused) {
+                grp.style.opacity = '1';
+                grp.style.borderColor = '';
+            } else {
+                const match = grp.querySelector(`.chip-tool[data-cluster="${focused}"]`);
+                grp.style.opacity = match ? '1' : '0.4';
+                grp.style.borderColor = match ? 'var(--line-strong)' : '';
+            }
+        });
+
+        updateHud(hoverIdx >= 0 ? nodes[hoverIdx] : null);
+        render();
+    }
+
+    // Connect cluster filter buttons
+    document.querySelectorAll('.c-filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const c = btn.dataset.cluster;
+            setClusterFocus(c === 'all' ? null : c);
+        });
+    });
+
+    // Reset button
     const resetBtn = document.getElementById('constellationReset');
     if (resetBtn) {
         resetBtn.addEventListener('click', () => {
             focused = null;
-            nodes.forEach(n => { n.x = n.hx; n.y = n.hy; n.vx = 0; n.vy = 0; });
+            searchQuery = '';
+            activeQuickFilter = 'all';
+            const searchInput = document.getElementById('skillsSearchInput');
+            if (searchInput) searchInput.value = '';
+            const searchClear = document.getElementById('skillsSearchClear');
+            if (searchClear) searchClear.hidden = true;
+
+            // Reset filter tabs & quick filter buttons
+            document.querySelectorAll('.c-filter-btn').forEach(b => {
+                const active = b.dataset.cluster === 'all';
+                b.classList.toggle('is-active', active);
+            });
+            document.querySelectorAll('.q-filter-btn').forEach(b => {
+                b.classList.toggle('is-active', b.dataset.filter === 'all');
+            });
+
+            // Reset chips
+            document.querySelectorAll('.chip-tool').forEach(ch => {
+                ch.classList.remove('is-dimmed', 'is-highlighted');
+            });
+            document.querySelectorAll('.stack-group').forEach(g => {
+                g.style.opacity = '1';
+                g.style.borderColor = '';
+            });
+
+            // Spring reset positions
+            nodes.forEach(n => {
+                n.x = n.hx; n.y = n.hy; n.vx = 0; n.vy = 0;
+            });
+            updateHud(null);
+            updateFilterStats();
             render();
         });
     }
+
+    // Omni-Search & Quick Filter Integration
+    const searchInput = document.getElementById('skillsSearchInput');
+    const searchClear = document.getElementById('skillsSearchClear');
+
+    function applyFilters() {
+        const q = searchQuery.toLowerCase().trim();
+        let matchCount = 0;
+
+        document.querySelectorAll('.chip-tool').forEach(chip => {
+            const name = (chip.dataset.skill || chip.textContent).toLowerCase();
+            const role = (chip.dataset.role || '').toLowerCase();
+            const cluster = (chip.dataset.cluster || '').toLowerCase();
+            const isOwned = chip.classList.contains('is-owned');
+
+            let matchesSearch = !q || name.includes(q) || role.includes(q) || cluster.includes(q);
+            let matchesQuick = true;
+
+            if (activeQuickFilter === 'owned') matchesQuick = isOwned;
+            else if (activeQuickFilter === 'learning') matchesQuick = !isOwned;
+            else if (activeQuickFilter === 'ml') matchesQuick = cluster === 'science' || cluster === 'ai';
+            else if (activeQuickFilter === 'engineering') matchesQuick = cluster === 'engineering' || cluster === 'bigdata';
+
+            const active = matchesSearch && matchesQuick;
+            chip.classList.toggle('is-dimmed', !active);
+            if (active && (q.length > 0 || activeQuickFilter !== 'all')) {
+                matchCount++;
+            }
+        });
+
+        // Dim or highlight stack groups based on matching chips
+        document.querySelectorAll('.stack-group').forEach(grp => {
+            const visibleChips = grp.querySelectorAll('.chip-tool:not(.is-dimmed)');
+            grp.style.opacity = visibleChips.length > 0 ? '1' : '0.28';
+        });
+
+        updateFilterStats(q.length > 0 || activeQuickFilter !== 'all' ? matchCount : null);
+        render();
+    }
+
+    function updateFilterStats(count) {
+        if (!nodeCountEl) return;
+        if (count !== null && count !== undefined) {
+            nodeCountEl.textContent = `${count} MATCHING CAPABILITIES`;
+            nodeCountEl.style.color = 'var(--ac)';
+        } else {
+            const activeNodes = nodes.filter(n => !n.off && (!focused || n.cluster === focused)).length;
+            nodeCountEl.textContent = `${activeNodes} NODES ACTIVE`;
+            nodeCountEl.style.color = 'var(--text-lo)';
+        }
+    }
+
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            searchQuery = e.target.value;
+            if (searchClear) searchClear.hidden = searchQuery.length === 0;
+            applyFilters();
+        });
+    }
+    if (searchClear) {
+        searchClear.addEventListener('click', () => {
+            searchQuery = '';
+            if (searchInput) searchInput.value = '';
+            searchClear.hidden = true;
+            applyFilters();
+        });
+    }
+
+    // Quick filter buttons
+    document.querySelectorAll('.q-filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.q-filter-btn').forEach(b => b.classList.remove('is-active'));
+            btn.classList.add('is-active');
+            activeQuickFilter = btn.dataset.filter;
+            applyFilters();
+        });
+    });
+
+    // Bidirectional linking: Hovering chip in stack lists activates canvas node!
+    document.querySelectorAll('.chip-tool').forEach(chip => {
+        const skillName = (chip.dataset.skill || chip.textContent).trim().toLowerCase();
+        chip.addEventListener('mouseenter', () => {
+            const targetNodeIdx = nodes.findIndex(n => {
+                const label = n.label.toLowerCase();
+                return label.includes(skillName) || skillName.includes(label);
+            });
+            if (targetNodeIdx >= 0) {
+                externalHoverIdx = targetNodeIdx;
+                nodes[targetNodeIdx].pulse = 1.0;
+                updateHud(nodes[targetNodeIdx]);
+            }
+        });
+        chip.addEventListener('mouseleave', () => {
+            externalHoverIdx = -1;
+            if (hoverIdx < 0) updateHud(null);
+        });
+    });
+
+    // Bus integration with Journey section
+    Bus.focusCluster = (key) => {
+        setClusterFocus(key);
+    };
 
     function step() {
         for (let i = 0; i < nodes.length; i++) {
@@ -423,20 +970,23 @@ function initSkillsConstellation() {
             if (n.off) continue;
             const driftX = REDUCE_MOTION ? 0 : Math.sin(time * 0.55 + i * 1.3) * 2;
             const driftY = REDUCE_MOTION ? 0 : Math.cos(time * 0.47 + i * 0.9) * 2;
-            n.vx += (n.hx + driftX - n.x) * 0.022;
-            n.vy += (n.hy + driftY - n.y) * 0.022;
+            n.vx += (n.hx + driftX - n.x) * 0.024;
+            n.vy += (n.hy + driftY - n.y) * 0.024;
 
             if (!REDUCE_MOTION && mouseX >= 0 && dragIdx < 0) {
                 const dx = n.x - mouseX, dy = n.y - mouseY;
                 const d = Math.hypot(dx, dy);
-                if (d < 80 && d > 0.001) {
-                    const f = (80 - d) / 80 * 1.4;
+                if (d < 85 && d > 0.001) {
+                    const f = (85 - d) / 85 * 1.6;
                     n.vx += dx / d * f;
                     n.vy += dy / d * f;
                 }
             }
-            n.vx *= 0.86; n.vy *= 0.86;
+            n.vx *= 0.85; n.vy *= 0.85;
             n.x += n.vx; n.y += n.vy;
+
+            // Decay attention pulse
+            if (n.pulse > 0) n.pulse = Math.max(0, n.pulse - 0.025);
         }
     }
 
@@ -451,11 +1001,10 @@ function initSkillsConstellation() {
     }
 
     const TEXT_HI = token('--text-hi', '#F4F4F5');
-    const TEXT_LO = token('--text-lo', '#71717A');
-    const PANEL_BG = token('--bg-overlay', '#1A1A1F');
+    const TEXT_MID = token('--text-mid', '#A1A1AA');
+    const TEXT_LO = token('--text-lo', '#8B8B95');
+    const ACCENT = token('--ac', '#F0B429');
 
-    /* Bloom: hubs start at the centre, tools start on their hub's home, and
-       the existing spring in step() carries everything outward. */
     function bloom() {
         const cx = W / 2, cyy = H / 2;
         nodes.forEach(n => {
@@ -479,145 +1028,298 @@ function initSkillsConstellation() {
         }
         ctx.globalAlpha = 1 - Math.pow(1 - intro, 3);
 
-        const hovering = hoverIdx >= 0;
-        // A node is "lit" if nothing is hovered/focused, or it's part of the
-        // hovered neighbourhood, or it belongs to the focused cluster.
+        const activeHoverIdx = hoverIdx >= 0 ? hoverIdx : externalHoverIdx;
+        const hovering = activeHoverIdx >= 0;
+
+        // Filter search matches
+        const q = searchQuery.toLowerCase().trim();
+        const matchesSearch = (n) => {
+            if (!q) return true;
+            return n.label.toLowerCase().includes(q) || (n.desc && n.desc.toLowerCase().includes(q));
+        };
+
         const isLit = (i) => {
-            if (hovering) return i === hoverIdx || adj[hoverIdx].has(i);
-            if (focused) return nodes[i].cluster === focused;
+            const n = nodes[i];
+            if (!matchesSearch(n)) return false;
+            if (activeQuickFilter === 'owned' && !n.owned) return false;
+            if (activeQuickFilter === 'learning' && n.owned) return false;
+            if (activeQuickFilter === 'ml' && n.cluster !== 'science' && n.cluster !== 'ai') return false;
+            if (activeQuickFilter === 'engineering' && n.cluster !== 'engineering' && n.cluster !== 'bigdata') return false;
+
+            if (hovering) return i === activeHoverIdx || adj[activeHoverIdx].has(i);
+            if (focused) return n.cluster === focused;
             return true;
         };
 
-        // Edges
-        edges.forEach(([a, b, solid]) => {
+        // 1. Technical Background Matrix Grid & Crosshairs
+        const gridStep = 55;
+        ctx.save();
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.02)';
+        ctx.lineWidth = 1;
+        for (let x = 0; x <= W; x += gridStep) {
+            ctx.beginPath();
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, H);
+            ctx.stroke();
+        }
+        for (let y = 0; y <= H; y += gridStep) {
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(W, y);
+            ctx.stroke();
+        }
+
+        // Crosshairs at grid intersections
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.045)';
+        for (let x = gridStep; x < W; x += gridStep * 2) {
+            for (let y = gridStep; y < H; y += gridStep * 2) {
+                ctx.fillRect(x - 3, y, 7, 1);
+                ctx.fillRect(x, y - 3, 1, 7);
+            }
+        }
+
+        // Concentric range rings from canvas center
+        const cx = W / 2, cy = H / 2;
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.035)';
+        ctx.setLineDash([2, 8]);
+        [Math.min(W, H) * 0.22, Math.min(W, H) * 0.38, Math.min(W, H) * 0.54].forEach(r => {
+            ctx.beginPath();
+            ctx.arc(cx, cy, r, 0, Math.PI * 2);
+            ctx.stroke();
+        });
+        ctx.setLineDash([]);
+
+        // Drifting celestial stars
+        stars.forEach(st => {
+            const sx = (st.x * W + time * st.speed * 4) % W;
+            const sy = (st.y * H + Math.sin(time * 0.4 + st.phase) * 6) % H;
+            const a = st.alpha * (0.6 + 0.4 * Math.sin(time * 1.5 + st.phase));
+            ctx.fillStyle = `rgba(255, 255, 255, ${a})`;
+            ctx.beginPath();
+            ctx.arc(sx, sy, st.r, 0, Math.PI * 2);
+            ctx.fill();
+        });
+        ctx.restore();
+
+        // 2. Edges / Data Pipelines
+        edges.forEach(([a, b, solid, isSpine]) => {
             const pa = nodes[a], pb = nodes[b];
             if (pa.off || pb.off) return;
             const lit = isLit(a) && isLit(b);
-            const alpha = lit ? (solid ? 0.4 : 0.22) : 0.05;
+            const edgeAlpha = lit ? (isSpine ? 0.75 : (solid ? 0.48 : 0.24)) : 0.04;
 
             const grad = ctx.createLinearGradient(pa.x, pa.y, pb.x, pb.y);
-            grad.addColorStop(0, rgba(pa.color, alpha));
-            grad.addColorStop(1, rgba(pb.color, alpha));
+            if (isSpine) {
+                grad.addColorStop(0, rgba(ACCENT, edgeAlpha));
+                grad.addColorStop(0.5, rgba(pa.color, edgeAlpha * 1.2));
+                grad.addColorStop(1, rgba(pb.color, edgeAlpha));
+            } else {
+                grad.addColorStop(0, rgba(pa.color, edgeAlpha));
+                grad.addColorStop(1, rgba(pb.color, edgeAlpha * 0.75));
+            }
 
             ctx.save();
-            if (!solid) ctx.setLineDash([3, 4]);
+            if (!solid && !isSpine) ctx.setLineDash([3, 5]);
             ctx.beginPath();
             ctx.moveTo(pa.x, pa.y);
             ctx.lineTo(pb.x, pb.y);
             ctx.strokeStyle = grad;
-            ctx.lineWidth = lit ? 1.4 : 1;
+            ctx.lineWidth = isSpine ? (lit ? 2.6 : 1.5) : (lit ? 1.6 : 1.0);
             ctx.stroke();
             ctx.restore();
 
-            // A packet travelling the edge — only on solid (owned) links.
-            if (!REDUCE_MOTION && solid && lit) {
-                const t = (time * 0.22 + a * 0.3 + b * 0.2) % 1;
-                const px = pa.x + (pb.x - pa.x) * t;
-                const py = pa.y + (pb.y - pa.y) * t;
-                ctx.beginPath();
-                ctx.arc(px, py, 1.8, 0, Math.PI * 2);
-                ctx.fillStyle = rgba(TEXT_HI, 0.55);
-                ctx.fill();
+            // Flowing Signal Data Packets
+            if (!REDUCE_MOTION && lit && (solid || isSpine)) {
+                const count = isSpine ? 3 : 1;
+                for (let p = 0; p < count; p++) {
+                    const t = (time * (isSpine ? 0.35 : 0.22) + a * 0.2 + b * 0.15 + (p / count)) % 1;
+                    const px = pa.x + (pb.x - pa.x) * t;
+                    const py = pa.y + (pb.y - pa.y) * t;
+
+                    // Comet tail
+                    const tailLen = isSpine ? 14 : 9;
+                    const tx = px - (pb.x - pa.x) * 0.04 * (tailLen / 10);
+                    const ty = py - (pb.y - pa.y) * 0.04 * (tailLen / 10);
+                    const tGrad = ctx.createLinearGradient(tx, ty, px, py);
+                    tGrad.addColorStop(0, 'rgba(255, 255, 255, 0)');
+                    tGrad.addColorStop(1, isSpine ? rgba(ACCENT, 0.9) : rgba(TEXT_HI, 0.85));
+
+                    ctx.beginPath();
+                    ctx.moveTo(tx, ty);
+                    ctx.lineTo(px, py);
+                    ctx.strokeStyle = tGrad;
+                    ctx.lineWidth = isSpine ? 2.5 : 1.6;
+                    ctx.stroke();
+
+                    // Packet head
+                    ctx.beginPath();
+                    ctx.arc(px, py, isSpine ? 2.4 : 1.8, 0, Math.PI * 2);
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.fill();
+                }
             }
         });
 
-        // Nodes
+        // 3. Nodes Rendering
         nodes.forEach((n, i) => {
             if (n.off) return;
             const lit = isLit(i);
-            const hov = i === hoverIdx;
-            const R = n.r * (hov ? 1.14 : 1);
-            const alpha = lit ? 1 : 0.28;
+            const hov = i === activeHoverIdx;
+            const R = n.r * (hov ? 1.18 : 1);
+            const alpha = lit ? 1 : 0.16;
 
-            // Halo
+            // Attention radar ripple
+            if (n.pulse > 0 || (hov && !REDUCE_MOTION)) {
+                const rippleR = R + 8 + (1 - n.pulse) * 24;
+                ctx.beginPath();
+                ctx.arc(n.x, n.y, rippleR, 0, Math.PI * 2);
+                ctx.strokeStyle = rgba(n.color, (n.pulse || 0.4) * 0.6);
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+            }
+
+            // Atmosphere Radial Glow Halo
             if (n.hub || hov) {
-                const g = ctx.createRadialGradient(n.x, n.y, R * 0.4, n.x, n.y, R * 2.1);
-                g.addColorStop(0, rgba(n.color, (hov ? 0.3 : 0.15) * alpha));
+                const haloR = R * (n.hub ? 2.5 : 2.0);
+                const g = ctx.createRadialGradient(n.x, n.y, R * 0.3, n.x, n.y, haloR);
+                g.addColorStop(0, rgba(n.color, (hov ? 0.38 : 0.18) * alpha));
                 g.addColorStop(1, rgba(n.color, 0));
                 ctx.beginPath();
-                ctx.arc(n.x, n.y, R * 2.1, 0, Math.PI * 2);
+                ctx.arc(n.x, n.y, haloR, 0, Math.PI * 2);
                 ctx.fillStyle = g;
                 ctx.fill();
             }
 
-            // Pulse ring on hubs
+            // Dual high-tech rotating orbital rings on hubs
             if (n.hub && !REDUCE_MOTION) {
-                const pr = R + 5 + Math.sin(time * 1.8 + n.ci) * 2.5;
+                ctx.save();
+                ctx.setLineDash([4, 6]);
                 ctx.beginPath();
-                ctx.arc(n.x, n.y, pr, 0, Math.PI * 2);
-                ctx.strokeStyle = rgba(n.color, 0.16 * alpha);
+                ctx.arc(n.x, n.y, R + 7, time * 0.6 + n.ci, time * 0.6 + n.ci + Math.PI * 2);
+                ctx.strokeStyle = rgba(n.color, (hov ? 0.45 : 0.22) * alpha);
+                ctx.lineWidth = 1.2;
+                ctx.stroke();
+
+                ctx.setLineDash([2, 8]);
+                ctx.beginPath();
+                ctx.arc(n.x, n.y, R + 13, -time * 0.4 + n.ci, -time * 0.4 + n.ci + Math.PI * 2);
+                ctx.strokeStyle = rgba(n.color, (hov ? 0.3 : 0.12) * alpha);
                 ctx.lineWidth = 1;
                 ctx.stroke();
+                ctx.restore();
             }
 
-            // Body — owned nodes are filled, learning nodes are hollow + dashed
+            // Node Body
             ctx.save();
-            if (n.owned) {
+            if (n.hub) {
+                // Glass reactor core
+                const coreGrad = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, R);
+                coreGrad.addColorStop(0, rgba(n.color, 0.4 * alpha));
+                coreGrad.addColorStop(0.7, rgba(n.color, 0.12 * alpha));
+                coreGrad.addColorStop(1, rgba(n.color, 0.05 * alpha));
+
                 ctx.beginPath();
                 ctx.arc(n.x, n.y, R, 0, Math.PI * 2);
-                ctx.fillStyle = rgba(n.color, (n.hub ? 0.2 : 0.14) * alpha + 0.02);
+                ctx.fillStyle = coreGrad;
                 ctx.fill();
+
                 ctx.beginPath();
                 ctx.arc(n.x, n.y, R, 0, Math.PI * 2);
-                ctx.strokeStyle = rgba(n.color, (hov ? 0.95 : 0.55) * alpha);
-                ctx.lineWidth = hov ? 2 : 1.4;
+                ctx.strokeStyle = rgba(n.color, (hov ? 1 : 0.75) * alpha);
+                ctx.lineWidth = hov ? 2.4 : 1.8;
                 ctx.stroke();
+
+                // Inner stage number
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.font = `600 ${(9.5 * scale).toFixed(1)}px 'JetBrains Mono', monospace`;
+                ctx.fillStyle = lit ? rgba(n.color, 0.9) : rgba(n.color, 0.4);
+                ctx.fillText(`0${n.stage}`, n.x, n.y - 7 * scale);
+
+                // Cluster title
+                ctx.font = `700 ${(11.5 * scale).toFixed(1)}px 'Inter', sans-serif`;
+                ctx.fillStyle = lit ? '#FFFFFF' : rgba(TEXT_HI, 0.4);
+                ctx.fillText(n.label, n.x, n.y + 6 * scale);
+            } else if (n.owned) {
+                // Solid Production Node
+                ctx.beginPath();
+                ctx.arc(n.x, n.y, R, 0, Math.PI * 2);
+                ctx.fillStyle = rgba(n.color, 0.22 * alpha);
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.arc(n.x, n.y, R, 0, Math.PI * 2);
+                ctx.strokeStyle = rgba(n.color, (hov ? 0.98 : 0.65) * alpha);
+                ctx.lineWidth = hov ? 2.2 : 1.4;
+                ctx.stroke();
+
+                // Bright glowing pip in center
+                ctx.beginPath();
+                ctx.arc(n.x, n.y, 3.5 * scale, 0, Math.PI * 2);
+                ctx.fillStyle = rgba(n.color, (hov ? 1 : 0.9) * alpha);
+                ctx.fill();
             } else {
+                // Dashed Pipeline / Learning Node
                 ctx.setLineDash([3, 3]);
                 ctx.beginPath();
                 ctx.arc(n.x, n.y, R, 0, Math.PI * 2);
-                ctx.strokeStyle = rgba(n.color, (hov ? 0.85 : 0.45) * alpha);
-                ctx.lineWidth = hov ? 1.8 : 1.2;
+                ctx.strokeStyle = rgba(n.color, (hov ? 0.9 : 0.45) * alpha);
+                ctx.lineWidth = hov ? 2 : 1.2;
                 ctx.stroke();
+
+                // Hollow center ember
+                ctx.beginPath();
+                ctx.arc(n.x, n.y, 2 * scale, 0, Math.PI * 2);
+                ctx.fillStyle = rgba(n.color, 0.7 * alpha);
+                ctx.fill();
             }
             ctx.restore();
 
-            // Label — inside for hubs, below for tools
-            ctx.textAlign = 'center';
-            if (n.hub) {
-                ctx.fillStyle = lit ? n.color : rgba(n.color, 0.4);
-                ctx.font = `600 ${(12 * scale).toFixed(1)}px 'Inter', sans-serif`;
+            // Frosted Glass Label Pill for Satellite Tools
+            if (!n.hub) {
+                ctx.font = `500 ${(10.5 * scale).toFixed(1)}px 'Inter', sans-serif`;
+                const textWidth = ctx.measureText(n.label).width;
+                const pillW = textWidth + 14 * scale;
+                const pillH = 18 * scale;
+                const pillX = n.x - pillW / 2;
+                const pillY = n.labelUp ? n.y - R - pillH - 4 * scale : n.y + R + 4 * scale;
+
+                // Clamp to canvas borders
+                const clampedX = Math.max(4, Math.min(W - pillW - 4, pillX));
+
+                ctx.save();
+                roundRect(ctx, clampedX, pillY, pillW, pillH, 4 * scale);
+                ctx.fillStyle = rgba('#0C0C11', lit ? (hov ? 0.95 : 0.85) : 0.4);
+                ctx.fill();
+                ctx.strokeStyle = rgba(n.color, lit ? (hov ? 0.8 : 0.3) : 0.08);
+                ctx.lineWidth = 1;
+                ctx.stroke();
+
+                ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
-                ctx.fillText(n.label, n.x, n.y);
-            } else {
-                ctx.fillStyle = lit ? rgba(TEXT_HI, 0.88) : rgba(TEXT_LO, 0.35);
-                ctx.font = `500 ${(10 * scale).toFixed(1)}px 'Inter', sans-serif`;
-                ctx.textBaseline = n.labelUp ? 'bottom' : 'top';
-                // Clamp to the canvas: a tool near the edge shifts its label in
-                // rather than letting it run off the side.
-                const half = ctx.measureText(n.label).width / 2;
-                const lx = Math.max(3 + half, Math.min(W - 3 - half, n.x));
-                ctx.fillText(n.label, lx, n.labelUp ? n.y - R - 5 * scale : n.y + R + 5 * scale);
+                ctx.fillStyle = lit ? (hov ? '#FFFFFF' : rgba(TEXT_HI, 0.92)) : rgba(TEXT_LO, 0.3);
+                ctx.fillText(n.label, clampedX + pillW / 2, pillY + pillH / 2);
+                ctx.restore();
             }
         });
 
-        // Tooltip
-        if (hovering && nodes[hoverIdx].sub) {
-            const n = nodes[hoverIdx];
-            const txt = n.sub;
-            ctx.font = `500 11px 'JetBrains Mono', monospace`;
-            const bw = ctx.measureText(txt).width + 20;
-            const bh = 24;
-            let bx = n.x - bw / 2;
-            let by = n.labelUp ? n.y + n.r + 12 : n.y - n.r - bh - 12;
-            bx = Math.max(6, Math.min(W - bw - 6, bx));
-            if (by < 6) by = n.y + n.r + 22;
-            if (by + bh > H - 6) by = Math.max(6, n.y - n.r - bh - 12);
-
-            ctx.fillStyle = rgba(PANEL_BG, 0.97);
-            ctx.strokeStyle = rgba(n.color, 0.5);
-            ctx.lineWidth = 1;
-            roundRect(ctx, bx, by, bw, bh, 6);
-            ctx.fill();
-            ctx.stroke();
-
-            ctx.fillStyle = TEXT_HI;
-            ctx.textAlign = 'left';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(txt, bx + 10, by + bh / 2);
-        }
         ctx.globalAlpha = 1;
     }
+
+    watchSize(canvas, resizeAll);
+    runWhileVisible(canvas, () => { render(); time += 0.016; });
+
+    if (!REDUCE_MOTION) {
+        whenVisible(canvas, (vis, io) => {
+            if (!vis || introStart) return;
+            if (io) io.disconnect();
+            bloom();
+        }, { threshold: 0.3 });
+    }
+
+    // Initialize HUD and stats
+    updateHud(null);
+    updateFilterStats();
 
     // Sized last: render() closes over the token constants declared above it.
     watchSize(canvas, resizeAll);
@@ -741,7 +1443,7 @@ function initScrollReveal() {
 
     // Whole blocks.
     document.querySelectorAll(
-        '.stats-bar, .tool-marquee, .rail-wrap, .stage-panels, .constellation-wrap, ' +
+        '.stats-bar, .tool-marquee, .rail-wrap, .stage-panels, .constellation-wrap, .skills-filter-toolbar, ' +
         '.footer-links, .footer-wordmark'
     ).forEach(el => mark(el, 0, 0));
 
@@ -1296,6 +1998,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initTypingEffect();
     animateCounters();
     initSpiralCanvas();
+    initSnapshotTabs();
     initSkillsConstellation();
     initJourney();
     initTimelineProgress();

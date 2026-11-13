@@ -126,32 +126,139 @@
                         </div>
                     </div>
 
-                    <div class="panel snapshot">
+                    <div class="panel snapshot" id="snapshotPanel">
                         <div class="panel-label">
-                            <span>Snapshot</span>
-                            <span class="panel-dot" aria-hidden="true"></span>
+                            <div class="panel-label-left">
+                                <span class="panel-label-title">Snapshot</span>
+                                <span class="snapshot-status-pill">
+                                    <span class="panel-dot" aria-hidden="true"></span>
+                                    <span>Available</span>
+                                </span>
+                            </div>
+                            <span class="snapshot-spec-tag">Core // Specs</span>
                         </div>
+
+                        <!-- Specialization Identity Banner -->
+                        <div class="snapshot-header">
+                            <div class="snapshot-core-roles">
+                                <span class="role-text role-bigdata" title="Distributed Systems & Big Data Scale">
+                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+                                    Big Data Specialist
+                                </span>
+                                <span class="role-sep">·</span>
+                                <span class="role-text role-datascience" title="Statistical Learning, Modeling & Predictive Insights">
+                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
+                                    Data Scientist
+                                </span>
+                                <span class="role-sep">·</span>
+                                <span class="role-text role-aiml" title="Deep Learning, GenAI & Neural Systems">
+                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 2a4 4 0 0 0-4 4c0 2 2 3 2 5a2 2 0 0 0 4 0c0-2 2-3 2-5a4 4 0 0 0-4-4z"/><circle cx="12" cy="19" r="2"/><line x1="12" y1="13" x2="12" y2="17"/></svg>
+                                    AI/ML Engineer
+                                </span>
+                            </div>
+                            <div class="snapshot-sub-tags">
+                                <span>Petabyte Streaming</span>
+                                <span class="sub-sep">·</span>
+                                <span>Predictive Modeling</span>
+                                <span class="sub-sep">·</span>
+                                <span>GenAI</span>
+                            </div>
+                        </div>
+
+                        <!-- Real-time Neural Data Pipeline Canvas -->
                         <div class="snapshot-visual">
-                            <canvas id="spiralCanvas" aria-hidden="true"></canvas>
+                            <canvas id="spiralCanvas" aria-label="Interactive real-time data streaming, data science, and neural network pipeline visualization"></canvas>
                         </div>
-                        <dl class="snapshot-rows">
-                            <div class="snapshot-row">
-                                <dt>Now</dt>
-                                <dd>Data Analyst<span class="sr-only"> — current stage</span></dd>
+
+                        <!-- Interactive Tech Stack Filters -->
+                        <div class="snapshot-stack-nav" role="tablist" aria-label="Tech Stack Views">
+                            <button class="stack-tab is-active" role="tab" aria-selected="true" data-stack="all">All</button>
+                            <button class="stack-tab" role="tab" aria-selected="false" data-stack="bigdata">Big Data</button>
+                            <button class="stack-tab" role="tab" aria-selected="false" data-stack="datasci">Data Science</button>
+                            <button class="stack-tab" role="tab" aria-selected="false" data-stack="aiml">AI / ML</button>
+                            <button class="stack-tab" role="tab" aria-selected="false" data-stack="mlops">MLOps</button>
+                        </div>
+
+                        <!-- Modern Demanded Tools & Frameworks -->
+                        <div class="snapshot-stack-body">
+                            <!-- Big Data Group -->
+                            <div class="snap-group" data-category="bigdata">
+                                <div class="snap-group-head">
+                                    <span class="snap-group-title">Big Data &amp; Distributed</span>
+                                    <span class="snap-group-badge">Distributed</span>
+                                </div>
+                                <div class="snap-tags">
+                                    <span class="tech-tag" data-tooltip="Distributed Cluster Compute &amp; PySpark">Apache Spark</span>
+                                    <span class="tech-tag" data-tooltip="Real-Time Event Streaming &amp; Pub/Sub">Kafka</span>
+                                    <span class="tech-tag" data-tooltip="Unified Lakehouse Platform">Databricks</span>
+                                    <span class="tech-tag" data-tooltip="DAG Workflow &amp; Pipeline Orchestration">Airflow</span>
+                                    <span class="tech-tag" data-tooltip="ACID Lake Storage &amp; Time Travel">Delta Lake</span>
+                                </div>
                             </div>
-                            <div class="snapshot-row">
-                                <dt>Working in</dt>
-                                <dd>Python · SQL · Power BI</dd>
+
+                            <!-- Data Science Group -->
+                            <div class="snap-group" data-category="datasci">
+                                <div class="snap-group-head">
+                                    <span class="snap-group-title">Data Science &amp; Statistical ML</span>
+                                    <span class="snap-group-badge">Predictive</span>
+                                </div>
+                                <div class="snap-tags">
+                                    <span class="tech-tag is-datasci" data-tooltip="High-Performance Multi-threaded DataFrames">Polars</span>
+                                    <span class="tech-tag is-datasci" data-tooltip="Statistical Learning &amp; Modeling">Scikit-Learn</span>
+                                    <span class="tech-tag is-datasci" data-tooltip="SOTA Gradient Boosted Decision Trees">XGBoost</span>
+                                    <span class="tech-tag is-datasci" data-tooltip="Vectorized Analytics &amp; Matrix Computing">Pandas / NumPy</span>
+                                    <span class="tech-tag is-datasci" data-tooltip="Bayesian Hyperparameter Optimization">Optuna</span>
+                                </div>
                             </div>
-                            <div class="snapshot-row">
-                                <dt>Deploys with</dt>
-                                <dd>Cloud · Git · Docker</dd>
+
+                            <!-- AI / ML & GenAI Group -->
+                            <div class="snap-group" data-category="aiml">
+                                <div class="snap-group-head">
+                                    <span class="snap-group-title">AI / ML &amp; GenAI</span>
+                                    <span class="snap-group-badge">Neural</span>
+                                </div>
+                                <div class="snap-tags">
+                                    <span class="tech-tag is-aiml" data-tooltip="Deep Learning &amp; Tensor Architectures">PyTorch</span>
+                                    <span class="tech-tag is-aiml" data-tooltip="LLMs &amp; Pretrained Foundation Models">Transformers</span>
+                                    <span class="tech-tag is-aiml" data-tooltip="Autonomous AI Agents &amp; RAG Systems">LangChain</span>
+                                    <span class="tech-tag is-aiml" data-tooltip="Semantic Search &amp; High-Dim Embeddings">Vector DBs</span>
+                                    <span class="tech-tag is-aiml" data-tooltip="Ultra-High Throughput LLM Inference">vLLM</span>
+                                </div>
                             </div>
-                            <div class="snapshot-row">
-                                <dt>Heading to</dt>
-                                <dd class="is-goal">AI Engineer</dd>
+
+                            <!-- MLOps & Production Group -->
+                            <div class="snap-group" data-category="mlops">
+                                <div class="snap-group-head">
+                                    <span class="snap-group-title">MLOps &amp; Cloud Infra</span>
+                                    <span class="snap-group-badge">Production</span>
+                                </div>
+                                <div class="snap-tags">
+                                    <span class="tech-tag is-infra" data-tooltip="Containerized Microservices">Docker</span>
+                                    <span class="tech-tag is-infra" data-tooltip="Container Orchestration &amp; Auto-scaling">Kubernetes</span>
+                                    <span class="tech-tag is-infra" data-tooltip="Model Lifecycle &amp; Experiment Tracking">MLflow</span>
+                                    <span class="tech-tag is-infra" data-tooltip="High-Performance Async AI API">FastAPI</span>
+                                    <span class="tech-tag is-infra" data-tooltip="Distributed Cloud Architecture">AWS / GCP</span>
+                                </div>
                             </div>
-                        </dl>
+                        </div>
+
+                        <!-- Executive Proof Telemetry Footer -->
+                        <div class="snapshot-footer">
+                            <div class="snapshot-metric">
+                                <span class="metric-val">100M+</span>
+                                <span class="metric-lbl">Scale Tested</span>
+                            </div>
+                            <div class="metric-sep"></div>
+                            <div class="snapshot-metric">
+                                <span class="metric-val">Real-Time</span>
+                                <span class="metric-lbl">Pipelines</span>
+                            </div>
+                            <div class="metric-sep"></div>
+                            <div class="snapshot-metric">
+                                <span class="metric-val">Production</span>
+                                <span class="metric-lbl">Architecture</span>
+                            </div>
+                        </div>
                     </div>
                 </aside>
             </div>
@@ -621,16 +728,17 @@
             <div class="section-container">
                 <header class="section-head section-head-row">
                     <div>
-                        <span class="eyebrow">The stack</span>
+                        <div class="skills-kicker">
+                            <span class="pulse-indicator" aria-hidden="true"></span>
+                            <span class="kicker-text">CAPABILITY GRAPH &amp; ARCHITECTURE</span>
+                        </div>
                         <h2 class="section-title">What I use, and what I'm learning.</h2>
                         <p class="section-lede">
-                            Filled nodes are tools and methods I work with today. Hollow nodes are the ones I'm
-                            still learning — including the machine learning that maps to the later stages of the path.
-                            Hover to trace a cluster, drag to pull it apart.
+                            Interactive neural topology of production toolchains, quantitative modeling libraries, and frontier AI research. Solid nodes represent shipped competencies; dashed nodes trace active engineering pipelines. Hover a cluster, drag nodes to test spring physics, or filter by domain.
                         </p>
                     </div>
-                    <a href="https://soumikbelel3-commits.github.io/data-analyst-skills/" target="_blank" rel="noopener noreferrer" class="head-link">
-                        The full roadmap — 128 skills
+                    <a href="https://soumikbelel3-commits.github.io/data-analyst-skills/" target="_blank" rel="noopener noreferrer" class="head-link skills-roadmap-link">
+                        <span>The full roadmap — 128 skills</span>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
                     </a>
                 </header>
@@ -638,102 +746,382 @@
                 <div class="skills-grid">
                     <div class="constellation-wrap">
                         <div class="constellation-head">
-                            <div class="legend">
-                                <span class="legend-item"><i class="legend-solid"></i>Working with</span>
-                                <span class="legend-item"><i class="legend-hollow"></i>Learning</span>
+                            <div class="constellation-telemetry">
+                                <span class="telemetry-live-dot" aria-hidden="true"></span>
+                                <span class="telemetry-title">TOPOLOGY SIMULATION</span>
+                                <span class="telemetry-divider">/</span>
+                                <span class="telemetry-count" id="constellationNodeCount">35 NODES ACTIVE</span>
                             </div>
-                            <button class="constellation-reset" id="constellationReset" type="button">Reset</button>
+
+                            <div class="constellation-filters" role="tablist" aria-label="Filter skill clusters">
+                                <button class="c-filter-btn is-active" type="button" data-cluster="all" role="tab" aria-selected="true">
+                                    <span class="c-filter-label">All Clusters</span>
+                                </button>
+                                <button class="c-filter-btn" type="button" data-cluster="analytics" role="tab" aria-selected="false">
+                                    <span class="c-dot" style="--dot-color: var(--hue-1)"></span>
+                                    <span class="c-filter-label">01 Analytics</span>
+                                </button>
+                                <button class="c-filter-btn" type="button" data-cluster="science" role="tab" aria-selected="false">
+                                    <span class="c-dot" style="--dot-color: var(--hue-2)"></span>
+                                    <span class="c-filter-label">02 Science</span>
+                                </button>
+                                <button class="c-filter-btn" type="button" data-cluster="engineering" role="tab" aria-selected="false">
+                                    <span class="c-dot" style="--dot-color: var(--hue-3)"></span>
+                                    <span class="c-filter-label">03 Data Eng</span>
+                                </button>
+                                <button class="c-filter-btn" type="button" data-cluster="bigdata" role="tab" aria-selected="false">
+                                    <span class="c-dot" style="--dot-color: var(--hue-4)"></span>
+                                    <span class="c-filter-label">04 Big Data</span>
+                                </button>
+                                <button class="c-filter-btn" type="button" data-cluster="ai" role="tab" aria-selected="false">
+                                    <span class="c-dot" style="--dot-color: var(--hue-5)"></span>
+                                    <span class="c-filter-label">05 AI &amp; ML</span>
+                                </button>
+                            </div>
+
+                            <div class="constellation-actions">
+                                <div class="legend" aria-label="Constellation node status legend">
+                                    <span class="legend-item" title="Production &amp; active project tools">
+                                        <i class="legend-solid"></i>Working with
+                                    </span>
+                                    <span class="legend-item" title="Active engineering research">
+                                        <i class="legend-hollow"></i>Learning
+                                    </span>
+                                </div>
+                                <button class="constellation-reset" id="constellationReset" type="button" title="Reset node physics and gravity">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                                    <span>Reset</span>
+                                </button>
+                            </div>
                         </div>
+
                         <div class="graph-container">
                             <canvas id="skillsConstellation" aria-label="Interactive map of skills grouped by career stage"></canvas>
+                            
+                            <!-- Dynamic Glassmorphic Telemetry HUD Card -->
+                            <div class="constellation-hud" id="constellationHud" aria-live="polite">
+                                <div class="hud-top">
+                                    <span class="hud-tag" id="hudStage">STAGE 01 · CORE</span>
+                                    <span class="hud-state" id="hudStatus">PRODUCTION</span>
+                                </div>
+                                <div class="hud-main">
+                                    <h4 class="hud-name" id="hudTitle">Interactive Topology</h4>
+                                    <p class="hud-desc" id="hudDesc">Hover or drag nodes to inspect engineering capabilities, connections, and production telemetry.</p>
+                                </div>
+                                <div class="hud-meta" id="hudMeta">
+                                    <span class="hud-hint">Drag nodes · Hover clusters · Click to isolate</span>
+                                </div>
+                            </div>
                         </div>
-                        <p class="graph-caption">Clusters mirror the five stages above — click a stage to light one up.</p>
+
+                        <div class="constellation-caption-bar">
+                            <div class="caption-left">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                                <span>Clusters mirror the five stages above — click any stage or tab above to isolate its neural constellation.</span>
+                            </div>
+                            <div class="caption-right">
+                                <span class="caption-metric">PHYSICS ENGINE: ACTIVE</span>
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="stack-lists">
-                        <div class="stack-group">
-                            <span class="stack-label">Languages</span>
+                    <!-- Omni-Search & Filter Toolbar -->
+                    <div class="skills-filter-toolbar" id="skillsFilterToolbar">
+                        <div class="skills-search-box">
+                            <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                            <input type="text" id="skillsSearchInput" class="skills-search-input" placeholder="Search 45+ tools, libraries, frameworks, models (e.g. Python, SQL, Neural, Docker)..." autocomplete="off" spellcheck="false" aria-label="Filter skills and tools">
+                            <button type="button" class="skills-search-clear" id="skillsSearchClear" aria-label="Clear search query" hidden>
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                            </button>
+                        </div>
+                        <div class="skills-quick-filters" role="group" aria-label="Quick filter categories">
+                            <button type="button" class="q-filter-btn is-active" data-filter="all">All Stack (46)</button>
+                            <button type="button" class="q-filter-btn" data-filter="owned">
+                                <span class="q-indicator is-owned"></span>Production Core
+                            </button>
+                            <button type="button" class="q-filter-btn" data-filter="learning">
+                                <span class="q-indicator is-learning"></span>Active Pipeline
+                            </button>
+                            <button type="button" class="q-filter-btn" data-filter="ml">Machine Learning</button>
+                            <button type="button" class="q-filter-btn" data-filter="engineering">Data &amp; Infra</button>
+                        </div>
+                    </div>
+
+                    <!-- Bento Stack Grid -->
+                    <div class="stack-lists" id="stackLists">
+                        <!-- Card 1: Languages & Runtimes -->
+                        <div class="stack-group" data-group="languages">
+                            <div class="stack-card-head">
+                                <div class="stack-card-icon" style="--card-hue: var(--hue-1)">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                                </div>
+                                <div class="stack-card-meta">
+                                    <div class="stack-card-topline">
+                                        <h3 class="stack-card-title">Languages &amp; Runtimes</h3>
+                                        <span class="stack-card-count">4 Runtimes</span>
+                                    </div>
+                                    <p class="stack-card-desc">Primary execution environments &amp; computational syntax</p>
+                                </div>
+                            </div>
                             <div class="stack-tags">
-                                <span class="chip-tool is-owned">Python</span>
-                                <span class="chip-tool is-owned">SQL</span>
-                                <span class="chip-tool is-owned">JavaScript</span>
-                                <span class="chip-tool is-owned">TypeScript</span>
+                                <span class="chip-tool is-owned" data-skill="Python" data-cluster="analytics" data-role="Core analytics, data modeling, APIs &amp; automation">
+                                    <i class="chip-pip"></i>Python<span class="chip-badge">CORE</span>
+                                </span>
+                                <span class="chip-tool is-owned" data-skill="SQL" data-cluster="analytics" data-role="Complex joins, analytical window functions, CTEs &amp; indexing">
+                                    <i class="chip-pip"></i>SQL<span class="chip-badge">PROD</span>
+                                </span>
+                                <span class="chip-tool is-owned" data-skill="JavaScript" data-cluster="engineering" data-role="Interactive frontends, asynchronous DOM &amp; visualization">
+                                    <i class="chip-pip"></i>JavaScript<span class="chip-badge">ES6+</span>
+                                </span>
+                                <span class="chip-tool is-owned" data-skill="TypeScript" data-cluster="engineering" data-role="Type-safe dashboard systems &amp; modern web interfaces">
+                                    <i class="chip-pip"></i>TypeScript<span class="chip-badge">SAFE</span>
+                                </span>
                             </div>
                         </div>
-                        <div class="stack-group">
-                            <span class="stack-label">Python / Data</span>
+
+                        <!-- Card 2: Python / Data Science -->
+                        <div class="stack-group" data-group="python-data">
+                            <div class="stack-card-head">
+                                <div class="stack-card-icon" style="--card-hue: var(--hue-2)">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
+                                </div>
+                                <div class="stack-card-meta">
+                                    <div class="stack-card-topline">
+                                        <h3 class="stack-card-title">Python &amp; Data Systems</h3>
+                                        <span class="stack-card-count">9 Libraries</span>
+                                    </div>
+                                    <p class="stack-card-desc">Vectorized computing, matrix operations &amp; exploratory dataframes</p>
+                                </div>
+                            </div>
                             <div class="stack-tags">
-                                <span class="chip-tool is-owned">Pandas</span>
-                                <span class="chip-tool is-owned">NumPy</span>
-                                <span class="chip-tool is-owned">scikit-learn</span>
-                                <span class="chip-tool is-owned">SciPy</span>
-                                <span class="chip-tool is-owned">statsmodels</span>
-                                <span class="chip-tool is-owned">SQLAlchemy</span>
-                                <span class="chip-tool is-owned">Matplotlib</span>
-                                <span class="chip-tool is-owned">Seaborn</span>
-                                <span class="chip-tool is-owned">Plotly</span>
+                                <span class="chip-tool is-owned" data-skill="Pandas" data-cluster="science" data-role="Tabular dataframes, aggregation, cleaning &amp; transformations">
+                                    <i class="chip-pip"></i>Pandas<span class="chip-badge">CORE</span>
+                                </span>
+                                <span class="chip-tool is-owned" data-skill="NumPy" data-cluster="science" data-role="Vectorized array calculations &amp; linear algebra operations">
+                                    <i class="chip-pip"></i>NumPy<span class="chip-badge">VECTOR</span>
+                                </span>
+                                <span class="chip-tool is-owned" data-skill="scikit-learn" data-cluster="science" data-role="Statistical machine learning algorithms &amp; preprocessing">
+                                    <i class="chip-pip"></i>scikit-learn<span class="chip-badge">SOTA</span>
+                                </span>
+                                <span class="chip-tool is-owned" data-skill="SciPy" data-cluster="science" data-role="Scientific distributions, statistical tests &amp; optimization">
+                                    <i class="chip-pip"></i>SciPy<span class="chip-badge">MATH</span>
+                                </span>
+                                <span class="chip-tool is-owned" data-skill="statsmodels" data-cluster="science" data-role="Econometric analysis, OLS regression &amp; hypothesis tests">
+                                    <i class="chip-pip"></i>statsmodels<span class="chip-badge">STATS</span>
+                                </span>
+                                <span class="chip-tool is-owned" data-skill="SQLAlchemy" data-cluster="engineering" data-role="ORM mapping, connection pools &amp; automated query builds">
+                                    <i class="chip-pip"></i>SQLAlchemy<span class="chip-badge">ORM</span>
+                                </span>
+                                <span class="chip-tool is-owned" data-skill="Matplotlib" data-cluster="analytics" data-role="Publication-grade scientific charts &amp; custom subplots">
+                                    <i class="chip-pip"></i>Matplotlib<span class="chip-badge">VIZ</span>
+                                </span>
+                                <span class="chip-tool is-owned" data-skill="Seaborn" data-cluster="analytics" data-role="Statistical distributions, heatmaps &amp; correlation matrices">
+                                    <i class="chip-pip"></i>Seaborn<span class="chip-badge">VIZ</span>
+                                </span>
+                                <span class="chip-tool is-owned" data-skill="Plotly" data-cluster="analytics" data-role="Interactive zoomable charts &amp; financial dashboards">
+                                    <i class="chip-pip"></i>Plotly<span class="chip-badge">WEB</span>
+                                </span>
                             </div>
                         </div>
-                        <div class="stack-group">
-                            <span class="stack-label">Machine learning</span>
+
+                        <!-- Card 3: Machine Learning & Modeling -->
+                        <div class="stack-group" data-group="machine-learning">
+                            <div class="stack-card-head">
+                                <div class="stack-card-icon" style="--card-hue: var(--hue-5)">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="3"/><circle cx="5" cy="19" r="3"/><circle cx="19" cy="19" r="3"/><line x1="12" y1="8" x2="5" y2="16"/><line x1="12" y1="8" x2="19" y2="16"/></svg>
+                                </div>
+                                <div class="stack-card-meta">
+                                    <div class="stack-card-topline">
+                                        <h3 class="stack-card-title">Machine Learning &amp; Modeling</h3>
+                                        <span class="stack-card-count">8 Methods</span>
+                                    </div>
+                                    <p class="stack-card-desc">Supervised &amp; unsupervised learning, loss optimization &amp; metrics</p>
+                                </div>
+                            </div>
                             <div class="stack-tags">
-                                <span class="chip-tool is-owned">Regression</span>
-                                <span class="chip-tool is-owned">Classification</span>
-                                <span class="chip-tool is-owned">Clustering</span>
-                                <span class="chip-tool is-learning">Feature engineering</span>
-                                <span class="chip-tool is-learning">Model evaluation</span>
-                                <span class="chip-tool is-learning">Tree ensembles / XGBoost</span>
-                                <span class="chip-tool is-learning">Time-series forecasting</span>
-                                <span class="chip-tool is-learning">Deep learning</span>
+                                <span class="chip-tool is-owned" data-skill="Regression" data-cluster="analytics" data-role="Linear, logistic &amp; regularized Ridge/Lasso models">
+                                    <i class="chip-pip"></i>Regression<span class="chip-badge">PROD</span>
+                                </span>
+                                <span class="chip-tool is-owned" data-skill="Classification" data-cluster="science" data-role="Binary &amp; multi-class classification, churn &amp; risk">
+                                    <i class="chip-pip"></i>Classification<span class="chip-badge">PROD</span>
+                                </span>
+                                <span class="chip-tool is-owned" data-skill="Clustering" data-cluster="science" data-role="K-Means, DBSCAN &amp; customer cohort segmentation">
+                                    <i class="chip-pip"></i>Clustering<span class="chip-badge">PROD</span>
+                                </span>
+                                <span class="chip-tool is-learning" data-skill="Feature engineering" data-cluster="science" data-role="Encodings, imputation, scaling &amp; PCA dimensionality reduction">
+                                    <i class="chip-pip"></i>Feature engineering<span class="chip-badge">STUDY</span>
+                                </span>
+                                <span class="chip-tool is-learning" data-skill="Model evaluation" data-cluster="science" data-role="K-fold CV, ROC-AUC, precision-recall &amp; lift analysis">
+                                    <i class="chip-pip"></i>Model evaluation<span class="chip-badge">STUDY</span>
+                                </span>
+                                <span class="chip-tool is-learning" data-skill="Tree ensembles / XGBoost" data-cluster="science" data-role="Gradient boosted trees, LightGBM &amp; hyperparameter tuning">
+                                    <i class="chip-pip"></i>Tree ensembles / XGBoost<span class="chip-badge">SOTA</span>
+                                </span>
+                                <span class="chip-tool is-learning" data-skill="Time-series forecasting" data-cluster="science" data-role="ARIMA, SARIMAX, Prophet &amp; financial backtesting">
+                                    <i class="chip-pip"></i>Time-series forecasting<span class="chip-badge">STUDY</span>
+                                </span>
+                                <span class="chip-tool is-learning" data-skill="Deep learning" data-cluster="ai" data-role="Multi-layer perceptrons, backprop &amp; loss optimization">
+                                    <i class="chip-pip"></i>Deep learning<span class="chip-badge">NEURAL</span>
+                                </span>
                             </div>
                         </div>
-                        <div class="stack-group">
-                            <span class="stack-label">Databases</span>
+
+                        <!-- Card 4: Databases & Storage -->
+                        <div class="stack-group" data-group="databases">
+                            <div class="stack-card-head">
+                                <div class="stack-card-icon" style="--card-hue: var(--hue-3)">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+                                </div>
+                                <div class="stack-card-meta">
+                                    <div class="stack-card-topline">
+                                        <h3 class="stack-card-title">Databases &amp; Storage Engines</h3>
+                                        <span class="stack-card-count">5 Engines</span>
+                                    </div>
+                                    <p class="stack-card-desc">Relational schemas, analytical stores &amp; low-latency cache</p>
+                                </div>
+                            </div>
                             <div class="stack-tags">
-                                <span class="chip-tool is-owned">PostgreSQL</span>
-                                <span class="chip-tool is-owned">MySQL</span>
-                                <span class="chip-tool is-owned">MS SQL Server</span>
-                                <span class="chip-tool is-owned">Redis</span>
-                                <span class="chip-tool is-owned">TimescaleDB</span>
+                                <span class="chip-tool is-owned" data-skill="PostgreSQL" data-cluster="engineering" data-role="Primary relational database, CTEs, indexing &amp; JSONB">
+                                    <i class="chip-pip"></i>PostgreSQL<span class="chip-badge">ACID</span>
+                                </span>
+                                <span class="chip-tool is-owned" data-skill="MySQL" data-cluster="engineering" data-role="Transactional storage, indexing &amp; normalized schemas">
+                                    <i class="chip-pip"></i>MySQL<span class="chip-badge">PROD</span>
+                                </span>
+                                <span class="chip-tool is-owned" data-skill="MS SQL Server" data-cluster="engineering" data-role="Enterprise queries, stored procedures &amp; execution plans">
+                                    <i class="chip-pip"></i>MS SQL Server<span class="chip-badge">ENTERPRISE</span>
+                                </span>
+                                <span class="chip-tool is-owned" data-skill="Redis" data-cluster="engineering" data-role="In-memory cache, key-value lookups &amp; session states">
+                                    <i class="chip-pip"></i>Redis<span class="chip-badge">FAST</span>
+                                </span>
+                                <span class="chip-tool is-owned" data-skill="TimescaleDB" data-cluster="engineering" data-role="Time-series PostgreSQL extension for telemetry &amp; market data">
+                                    <i class="chip-pip"></i>TimescaleDB<span class="chip-badge">TIME</span>
+                                </span>
                             </div>
                         </div>
-                        <div class="stack-group">
-                            <span class="stack-label">Backend / Web</span>
+
+                        <!-- Card 5: Backend & Data APIs -->
+                        <div class="stack-group" data-group="backend-web">
+                            <div class="stack-card-head">
+                                <div class="stack-card-icon" style="--card-hue: var(--hue-3)">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                                </div>
+                                <div class="stack-card-meta">
+                                    <div class="stack-card-topline">
+                                        <h3 class="stack-card-title">Backend &amp; Web Infrastructure</h3>
+                                        <span class="stack-card-count">7 Tools</span>
+                                    </div>
+                                    <p class="stack-card-desc">Asynchronous microservices, ETL endpoints &amp; UI deployment</p>
+                                </div>
+                            </div>
                             <div class="stack-tags">
-                                <span class="chip-tool is-owned">FastAPI</span>
-                                <span class="chip-tool is-owned">REST APIs</span>
-                                <span class="chip-tool is-owned">React</span>
-                                <span class="chip-tool is-owned">Vite</span>
-                                <span class="chip-tool is-owned">Tailwind CSS</span>
-                                <span class="chip-tool is-owned">HTML5 &amp; CSS3</span>
-                                <span class="chip-tool is-owned">Git / GitHub</span>
+                                <span class="chip-tool is-owned" data-skill="FastAPI" data-cluster="engineering" data-role="Async Python REST microservices, Pydantic &amp; Swagger">
+                                    <i class="chip-pip"></i>FastAPI<span class="chip-badge">ASYNC</span>
+                                </span>
+                                <span class="chip-tool is-owned" data-skill="REST APIs" data-cluster="engineering" data-role="Endpoint design, JSON contracts &amp; authentication">
+                                    <i class="chip-pip"></i>REST APIs<span class="chip-badge">HTTP</span>
+                                </span>
+                                <span class="chip-tool is-owned" data-skill="React" data-cluster="engineering" data-role="Component state, custom hooks &amp; data dashboards">
+                                    <i class="chip-pip"></i>React<span class="chip-badge">UI</span>
+                                </span>
+                                <span class="chip-tool is-owned" data-skill="Vite" data-cluster="engineering" data-role="Modern ESM build pipelines &amp; instant dev server">
+                                    <i class="chip-pip"></i>Vite<span class="chip-badge">BUILD</span>
+                                </span>
+                                <span class="chip-tool is-owned" data-skill="Tailwind CSS" data-cluster="engineering" data-role="Utility CSS architecture, dark systems &amp; micro-interactions">
+                                    <i class="chip-pip"></i>Tailwind CSS<span class="chip-badge">STYLE</span>
+                                </span>
+                                <span class="chip-tool is-owned" data-skill="HTML5 &amp; CSS3" data-cluster="engineering" data-role="Semantic standards, CSS Grid, Flexbox &amp; canvas graphics">
+                                    <i class="chip-pip"></i>HTML5 &amp; CSS3<span class="chip-badge">CORE</span>
+                                </span>
+                                <span class="chip-tool is-owned" data-skill="Git / GitHub" data-cluster="engineering" data-role="Version control, branching workflows, pull requests &amp; CI">
+                                    <i class="chip-pip"></i>Git / GitHub<span class="chip-badge">VCS</span>
+                                </span>
                             </div>
                         </div>
-                        <div class="stack-group">
-                            <span class="stack-label">BI &amp; Tools</span>
+
+                        <!-- Card 6: BI & Enterprise Analytics -->
+                        <div class="stack-group" data-group="bi-tools">
+                            <div class="stack-card-head">
+                                <div class="stack-card-icon" style="--card-hue: var(--hue-1)">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                                </div>
+                                <div class="stack-card-meta">
+                                    <div class="stack-card-topline">
+                                        <h3 class="stack-card-title">BI &amp; Enterprise Analytics</h3>
+                                        <span class="stack-card-count">3 Platforms</span>
+                                    </div>
+                                    <p class="stack-card-desc">Executive decision intelligence, automated reporting &amp; DAX models</p>
+                                </div>
+                            </div>
                             <div class="stack-tags">
-                                <span class="chip-tool is-owned">Power BI (Power Query, DAX)</span>
-                                <span class="chip-tool is-owned">Tableau</span>
-                                <span class="chip-tool is-owned">Excel (Power Query, Pivot Tables)</span>
+                                <span class="chip-tool is-owned" data-skill="Power BI (Power Query, DAX)" data-cluster="analytics" data-role="Executive KPI dashboards, DAX measures &amp; star-schema modeling">
+                                    <i class="chip-pip"></i>Power BI (Power Query, DAX)<span class="chip-badge">ENTERPRISE</span>
+                                </span>
+                                <span class="chip-tool is-owned" data-skill="Tableau" data-cluster="analytics" data-role="Visual analytics, calculated fields, parameters &amp; LODs">
+                                    <i class="chip-pip"></i>Tableau<span class="chip-badge">BI</span>
+                                </span>
+                                <span class="chip-tool is-owned" data-skill="Excel (Power Query, Pivot Tables)" data-cluster="analytics" data-role="Financial models, ETL queries &amp; pivot automation">
+                                    <i class="chip-pip"></i>Excel (Power Query, Pivot Tables)<span class="chip-badge">MODELING</span>
+                                </span>
                             </div>
                         </div>
-                        <div class="stack-group">
-                            <span class="stack-label">Currently learning</span>
+
+                        <!-- Card 7: The Frontier & Active Pipeline (Full-width showcase) -->
+                        <div class="stack-group stack-group-frontier" data-group="currently-learning">
+                            <div class="stack-card-head">
+                                <div class="stack-card-icon" style="--card-hue: var(--hue-5)">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                                </div>
+                                <div class="stack-card-meta">
+                                    <div class="stack-card-topline">
+                                        <h3 class="stack-card-title">The Frontier &amp; Active Pipeline</h3>
+                                        <span class="stack-card-count">14 Emerging Domains</span>
+                                    </div>
+                                    <p class="stack-card-desc">Active technical research, laboratory implementations, and progressive coursework across Big Data &amp; Foundation AI</p>
+                                </div>
+                            </div>
                             <div class="stack-tags">
-                                <span class="chip-tool is-learning">Apache Spark</span>
-                                <span class="chip-tool is-learning">Kafka</span>
-                                <span class="chip-tool is-learning">Airflow</span>
-                                <span class="chip-tool is-learning">dbt</span>
-                                <span class="chip-tool is-learning">Docker</span>
-                                <span class="chip-tool is-learning">AWS</span>
-                                <span class="chip-tool is-learning">PyTorch</span>
-                                <span class="chip-tool is-learning">Spark MLlib</span>
-                                <span class="chip-tool is-learning">Transformers</span>
-                                <span class="chip-tool is-learning">NLP</span>
-                                <span class="chip-tool is-learning">LLMs</span>
-                                <span class="chip-tool is-learning">RAG</span>
-                                <span class="chip-tool is-learning">Vector DBs</span>
-                                <span class="chip-tool is-learning">MLOps</span>
+                                <span class="chip-tool is-learning" data-skill="Apache Spark" data-cluster="bigdata" data-role="Distributed compute, large-scale dataframes &amp; cluster execution">
+                                    <i class="chip-pip"></i>Apache Spark<span class="chip-badge">BIG DATA</span>
+                                </span>
+                                <span class="chip-tool is-learning" data-skill="Kafka" data-cluster="bigdata" data-role="Real-time event log ingestion &amp; distributed streaming">
+                                    <i class="chip-pip"></i>Kafka<span class="chip-badge">STREAMING</span>
+                                </span>
+                                <span class="chip-tool is-learning" data-skill="Airflow" data-cluster="engineering" data-role="Directed acyclic graph (DAG) pipeline orchestration">
+                                    <i class="chip-pip"></i>Airflow<span class="chip-badge">OPS</span>
+                                </span>
+                                <span class="chip-tool is-learning" data-skill="dbt" data-cluster="bigdata" data-role="Modern analytics engineering &amp; modular SQL testing">
+                                    <i class="chip-pip"></i>dbt<span class="chip-badge">DATA OPS</span>
+                                </span>
+                                <span class="chip-tool is-learning" data-skill="Docker" data-cluster="engineering" data-role="Containerized service encapsulation &amp; microservice images">
+                                    <i class="chip-pip"></i>Docker<span class="chip-badge">INFRA</span>
+                                </span>
+                                <span class="chip-tool is-learning" data-skill="AWS" data-cluster="bigdata" data-role="Cloud computing, S3 data lakes &amp; serverless ETL">
+                                    <i class="chip-pip"></i>AWS<span class="chip-badge">CLOUD</span>
+                                </span>
+                                <span class="chip-tool is-learning" data-skill="PyTorch" data-cluster="ai" data-role="Dynamic neural network graphs, GPU tensors &amp; backpropagation">
+                                    <i class="chip-pip"></i>PyTorch<span class="chip-badge">AI CORE</span>
+                                </span>
+                                <span class="chip-tool is-learning" data-skill="Spark MLlib" data-cluster="bigdata" data-role="Distributed machine learning algorithms on cluster memory">
+                                    <i class="chip-pip"></i>Spark MLlib<span class="chip-badge">DIST-ML</span>
+                                </span>
+                                <span class="chip-tool is-learning" data-skill="Transformers" data-cluster="ai" data-role="Attention architectures, Hugging Face models &amp; fine-tuning">
+                                    <i class="chip-pip"></i>Transformers<span class="chip-badge">GEN AI</span>
+                                </span>
+                                <span class="chip-tool is-learning" data-skill="NLP" data-cluster="ai" data-role="Text tokenization, embeddings, vector semantics &amp; sentiment">
+                                    <i class="chip-pip"></i>NLP<span class="chip-badge">LANGUAGE</span>
+                                </span>
+                                <span class="chip-tool is-learning" data-skill="LLMs" data-cluster="ai" data-role="Large language model orchestration, prompts &amp; reasoning">
+                                    <i class="chip-pip"></i>LLMs<span class="chip-badge">MODELS</span>
+                                </span>
+                                <span class="chip-tool is-learning" data-skill="RAG" data-cluster="ai" data-role="Retrieval-augmented generation &amp; contextual vector lookup">
+                                    <i class="chip-pip"></i>RAG<span class="chip-badge">RAG</span>
+                                </span>
+                                <span class="chip-tool is-learning" data-skill="Vector DBs" data-cluster="ai" data-role="Vector indexing (Pinecone, Chroma, pgvector) for similarity search">
+                                    <i class="chip-pip"></i>Vector DBs<span class="chip-badge">VECTOR</span>
+                                </span>
+                                <span class="chip-tool is-learning" data-skill="MLOps" data-cluster="ai" data-role="Model registry, continuous monitoring, latency &amp; data drift alerts">
+                                    <i class="chip-pip"></i>MLOps<span class="chip-badge">DEPLOY</span>
+                                </span>
                             </div>
                         </div>
                     </div>
