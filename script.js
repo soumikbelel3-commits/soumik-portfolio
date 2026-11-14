@@ -1982,6 +1982,671 @@ function initSmoothScroll() {
 }
 
 /* ==========================================================================
+   Toast Notification System
+   ========================================================================== */
+function showToast(message, icon = '✓') {
+    const container = document.getElementById('toastContainer');
+    if (!container) return;
+    const pill = document.createElement('div');
+    pill.className = 'toast-pill';
+    pill.innerHTML = `<span class="toast-icon">${icon}</span><span>${message}</span>`;
+    container.appendChild(pill);
+    requestAnimationFrame(() => pill.classList.add('is-visible'));
+    setTimeout(() => {
+        pill.classList.remove('is-visible');
+        setTimeout(() => pill.remove(), 300);
+    }, 3200);
+}
+
+/* ==========================================================================
+   Web Audio Synthesizer Haptics (Apple / Linear Micro-tactile)
+   ========================================================================== */
+let audioCtx = null;
+let hapticsEnabled = false;
+
+function playHaptic(type = 'tap') {
+    if (!hapticsEnabled) return;
+    try {
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        const now = audioCtx.currentTime;
+
+        if (type === 'tap') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(440, now);
+            osc.frequency.exponentialRampToValueAtTime(220, now + 0.015);
+            gain.gain.setValueAtTime(0.02, now);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.015);
+            osc.start(now);
+            osc.stop(now + 0.015);
+        } else if (type === 'pop') {
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(880, now);
+            osc.frequency.exponentialRampToValueAtTime(440, now + 0.025);
+            gain.gain.setValueAtTime(0.025, now);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.025);
+            osc.start(now);
+            osc.stop(now + 0.025);
+        } else if (type === 'chime') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(660, now);
+            osc.frequency.exponentialRampToValueAtTime(1320, now + 0.05);
+            gain.gain.setValueAtTime(0.03, now);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.06);
+            osc.start(now);
+            osc.stop(now + 0.06);
+        }
+    } catch (e) {
+        // AudioContext not supported or permission denied
+    }
+}
+
+function initAudioHaptics() {
+    const btn = document.getElementById('audioToggleBtn');
+    if (!btn) return;
+    const offIcon = btn.querySelector('.audio-icon-off');
+    const onIcon = btn.querySelector('.audio-icon-on');
+
+    const saved = localStorage.getItem('soumik_audio_haptics');
+    if (saved === 'true') {
+        hapticsEnabled = true;
+        btn.classList.add('is-active');
+        btn.title = 'Haptic Audio: On';
+        if (offIcon) offIcon.style.display = 'none';
+        if (onIcon) onIcon.style.display = 'block';
+    }
+
+    btn.addEventListener('click', () => {
+        hapticsEnabled = !hapticsEnabled;
+        localStorage.setItem('soumik_audio_haptics', hapticsEnabled);
+        btn.classList.toggle('is-active', hapticsEnabled);
+        btn.title = hapticsEnabled ? 'Haptic Audio: On' : 'Haptic Audio: Off';
+        if (offIcon) offIcon.style.display = hapticsEnabled ? 'none' : 'block';
+        if (onIcon) onIcon.style.display = hapticsEnabled ? 'block' : 'none';
+        if (hapticsEnabled) {
+            playHaptic('chime');
+            showToast('Tactile audio feedback enabled', '🔊');
+        } else {
+            showToast('Tactile audio muted', '🔇');
+        }
+    });
+
+    document.addEventListener('click', (e) => {
+        if (e.target.closest('button, .nav-link, .chip-tool, .stack-tab, .c-filter-btn, .q-filter-btn, .stage')) {
+            playHaptic('tap');
+        }
+    }, { passive: true });
+}
+
+/* ==========================================================================
+   Live Regional Telemetry Clocks (IST Synchronization)
+   ========================================================================== */
+function initLiveClocks() {
+    function update() {
+        const now = new Date();
+        const istOffset = 5.5 * 60 * 60 * 1000;
+        const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+        const istDate = new Date(utc + istOffset);
+        const hours = String(istDate.getHours()).padStart(2, '0');
+        const minutes = String(istDate.getMinutes()).padStart(2, '0');
+        const seconds = String(istDate.getSeconds()).padStart(2, '0');
+        const timeStr = `${hours}:${minutes}:${seconds} IST`;
+
+        const heroClock = document.getElementById('heroLiveClock');
+        if (heroClock) {
+            const digits = heroClock.querySelector('.clock-digits');
+            if (digits) digits.textContent = `${hours}:${minutes} IST`;
+        }
+
+        const tzClock = document.getElementById('liveTzClock');
+        if (tzClock) {
+            tzClock.textContent = `Kolkata · ${timeStr} (UTC+5:30)`;
+        }
+    }
+    update();
+    setInterval(update, 1000);
+}
+
+/* ==========================================================================
+   Card Spotlight Physics (Linear/Stripe hardware-accelerated follow)
+   ========================================================================== */
+function initCardSpotlight() {
+    if (!FINE_POINTER) return;
+    const cards = document.querySelectorAll('[data-spotlight="card"]');
+    cards.forEach(card => {
+        card.addEventListener('pointermove', (e) => {
+            const rect = card.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            card.style.setProperty('--spot-x', `${x}px`);
+            card.style.setProperty('--spot-y', `${y}px`);
+        });
+    });
+}
+
+/* ==========================================================================
+   Interactive Hero Terminal CLI
+   ========================================================================== */
+function initInteractiveTerminal() {
+    const box = document.getElementById('heroTerminalBox');
+    if (!box) return;
+
+    const copyBtn = document.getElementById('terminalCopyBtn');
+    const typeTarget = document.getElementById('terminalTypeTarget');
+    const responseBox = document.getElementById('terminalResponse');
+    const chips = box.querySelectorAll('.t-chip');
+
+    const commands = {
+        metrics: `✓ 30+ production projects & analytics pipelines shipped\n✓ 3 internships: finance, business & public data\n✓ 6 verified credentials (Google, Vanderbilt, Michigan)\n✓ 100M+ distributed rows scale tested`,
+        stack: `→ Big Data: Apache Spark, Kafka, Databricks, Delta Lake, Airflow\n→ Data Science: Polars, Scikit-Learn, XGBoost, Pandas, Optuna\n→ AI / ML: PyTorch, Transformers, LangChain, Vector DBs, vLLM\n→ Infra: Docker, Kubernetes, MLflow, FastAPI, TimescaleDB, AWS/GCP`,
+        pipeline: `⚡ Pipeline status: OPTIMAL\n  • Ingestion: Kafka event stream active (8.4k evt/sec)\n  • Compute: Spark cluster memory usage 42%\n  • Storage: Delta Lakehouse ACID parity verified\n  • Inference: PyTorch tensor latency: 1.2ms`,
+        clear: ''
+    };
+
+    function runCmd(cmd) {
+        playHaptic('pop');
+        if (cmd === 'clear') {
+            if (responseBox) {
+                responseBox.hidden = true;
+                responseBox.textContent = '';
+            }
+            if (typeTarget) typeTarget.textContent = 'turning data into decisions.';
+            return;
+        }
+
+        if (typeTarget) typeTarget.textContent = cmd;
+        if (responseBox) {
+            responseBox.hidden = false;
+            responseBox.textContent = commands[cmd] || `command not recognized: ${cmd}`;
+        }
+    }
+
+    chips.forEach(chip => {
+        chip.addEventListener('click', () => {
+            const cmd = chip.dataset.cmd;
+            runCmd(cmd);
+        });
+    });
+
+    if (copyBtn) {
+        copyBtn.addEventListener('click', () => {
+            playHaptic('tap');
+            const textToCopy = responseBox && !responseBox.hidden && responseBox.textContent 
+                ? responseBox.textContent 
+                : (typeTarget ? `soumik@analytics:~$ ${typeTarget.textContent}` : 'soumik@analytics:~$ turning data into decisions.');
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                showToast('Terminal output copied to clipboard', '📋');
+            }).catch(() => {
+                showToast('Copied to clipboard', '📋');
+            });
+        });
+    }
+}
+
+/* ==========================================================================
+   ATS Résumé Quick-View Modal
+   ========================================================================== */
+function initResumeModal() {
+    const modal = document.getElementById('pdfModal');
+    if (!modal) return;
+    const closeBtn = document.getElementById('pdfModalClose');
+    const triggers = [
+        document.getElementById('quickResumePreviewBtn'),
+        document.getElementById('resumePreviewOverlayBtn'),
+        document.getElementById('resumeQuickViewBtn')
+    ];
+
+    function openModal() {
+        playHaptic('chime');
+        modal.classList.add('is-open');
+        modal.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+        playHaptic('tap');
+        modal.classList.remove('is-open');
+        modal.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+    }
+
+    triggers.forEach(btn => {
+        if (btn) btn.addEventListener('click', openModal);
+    });
+
+    if (closeBtn) closeBtn.addEventListener('click', closeModal);
+
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal.classList.contains('is-open')) {
+            closeModal();
+        }
+    });
+
+    const dlBtn = document.getElementById('resumeDownloadBtn');
+    if (dlBtn) {
+        dlBtn.addEventListener('click', () => {
+            showToast('Downloading Soumik_resume.pdf...', '📄');
+        });
+    }
+}
+
+/* ==========================================================================
+   Project Technical Architecture Deep-Dive Modal
+   ========================================================================== */
+const PROJECT_DATA = {
+    'omni-terminal': {
+        title: 'Omni Terminal — Financial Intelligence Platform',
+        kind: 'Full-Stack Platform · Stage 03',
+        desc: 'Production-grade financial terminal built specifically for Indian equity and derivatives traders. Delivers sub-100ms real-time candlestick charts, multi-parameter technical screeners, and automated risk metrics across 100k+ historical ticks.',
+        metrics: [
+            { val: '<100ms', lbl: 'Chart Render Latency' },
+            { val: '100k+', lbl: 'Ticks Stored & Screened' },
+            { val: '100%', lbl: 'Async Microservice Uptime' }
+        ],
+        architecture: 'React (Vite) + Tailwind frontend connecting via WebSockets and REST to a high-concurrency FastAPI microservice. Backed by PostgreSQL with TimescaleDB hypertable partitioning for time-series tick compression, plus an in-memory Redis layer for ticker caching.',
+        tags: ['React', 'Vite', 'FastAPI', 'PostgreSQL', 'TimescaleDB', 'Redis', 'WebSockets', 'Tailwind CSS'],
+        live: 'https://omni-terminal-nu.vercel.app',
+        github: 'https://github.com/soumikbelel3-commits/omni-terminal'
+    },
+    'trader-behavior': {
+        title: 'Trader Behavior & Performance Analysis',
+        kind: 'Quantitative Analytics · Finance',
+        desc: 'Comprehensive exploratory and statistical audit of individual trader transaction logs. Isolated behavioral biases (loss aversion, overtrading, disposition effect) that statistically separate profitable accounts from unprofitable cohorts.',
+        metrics: [
+            { val: '35+', lbl: 'Trading Metrics Modeled' },
+            { val: '2.41', lbl: 'Top Quartile Sharpe' },
+            { val: '3 Cohorts', lbl: 'Behavioral Clusters' }
+        ],
+        architecture: 'Pandas & NumPy data pipeline for transaction log normalization and P&L attribution. SQL CTEs compute rolling drawdowns and win/loss payoff ratios. Visualized via an interactive Power BI drill-down suite with custom DAX parameters.',
+        tags: ['Python', 'SQL', 'Power BI', 'DAX', 'Pandas', 'Financial Modeling'],
+        live: null,
+        github: 'https://github.com/soumikbelel3-commits'
+    },
+    'supply-chain': {
+        title: 'Global Supply Chain Risk Analysis',
+        kind: 'Analytics Engineering · Logistics',
+        desc: 'Multi-echelon supply chain resilience platform modelling supplier disruption, route transit volatility, and inventory stock-out risks across global trade nodes.',
+        metrics: [
+            { val: '5 Tiers', lbl: 'Disruption Risk Index' },
+            { val: '14 Routes', lbl: 'Bottlenecks Flagged' },
+            { val: '100k+', lbl: 'Supply Rows Processed' }
+        ],
+        architecture: 'PostgreSQL data pipeline with automated schema cleaning. Power BI star-schema dimensional modeling with DAX measures driving interactive geographic and supplier drill-downs.',
+        tags: ['Python', 'SQL', 'Power BI', 'Data Modeling', 'ETL'],
+        live: null,
+        github: 'https://github.com/soumikbelel3-commits'
+    },
+    'financial-performance': {
+        title: 'Financial Performance Analysis & Dashboard',
+        kind: 'Corporate Finance · Executive BI',
+        desc: 'Automated executive reporting layer synthesizing revenue trajectories, gross margin expansion, overhead cost variance, and EBITDA waterfalls across multi-period accounting sheets.',
+        metrics: [
+            { val: '12+', lbl: 'Dynamic DAX Measures' },
+            { val: '100%', lbl: 'Automated Refresh' },
+            { val: 'Variance', lbl: 'Waterfall Decomposition' }
+        ],
+        architecture: 'Power Query automated transformation pipelines ingestion from raw balance sheet & P&L exports. Built-in time intelligence (YoY, MoM, QoQ) using robust DAX measures.',
+        tags: ['Power BI', 'DAX', 'Excel', 'Python', 'Financial Analytics'],
+        live: null,
+        github: 'https://github.com/soumikbelel3-commits'
+    },
+    'hr-attrition': {
+        title: 'HR Analytics — Employee Attrition Classifier',
+        kind: 'Predictive ML & Analytics · People Ops',
+        desc: 'Supervised classification model analyzing workforce telemetry (tenure, satisfaction, compensation bands, overtime) to forecast individual employee attrition likelihood and isolate primary turnover catalysts.',
+        metrics: [
+            { val: '0.89', lbl: 'ROC-AUC Classification' },
+            { val: '15+', lbl: 'Features Engineered' },
+            { val: 'Top 3', lbl: 'Drivers Isolated' }
+        ],
+        architecture: 'End-to-end scikit-learn pipeline featuring SMOTE class balancing, Random Forest & Logistic Regression cross-validation, and SHAP value feature importance ranking. Packaged into a Power BI executive retention simulator.',
+        tags: ['Python', 'scikit-learn', 'Machine Learning', 'Power BI', 'Classification'],
+        live: null,
+        github: 'https://github.com/soumikbelel3-commits'
+    },
+    'customer-segmentation': {
+        title: 'Customer Segmentation Analysis (RFM + K-Means)',
+        kind: 'Statistical Learning · Stage 02',
+        desc: 'Unsupervised machine learning model performing RFM (Recency, Frequency, Monetary) cohort clustering on e-commerce transaction streams to distinguish champions, at-risk buyers, and high-value opportunities.',
+        metrics: [
+            { val: '4 Clusters', lbl: 'Optimal K-Means (Elbow)' },
+            { val: '32%', lbl: 'Retention Lift Opportunity' },
+            { val: '10k+', lbl: 'Customer Records' }
+        ],
+        architecture: 'Data normalization and Box-Cox transformations in Python/NumPy followed by Scikit-Learn K-Means clustering with silhouette score verification. Results exported to interactive Power BI / Excel dashboards.',
+        tags: ['Python', 'scikit-learn', 'Clustering', 'K-Means', 'Excel'],
+        live: null,
+        github: 'https://github.com/soumikbelel3-commits'
+    },
+    'sales-dashboard': {
+        title: 'Sales Performance Dashboard',
+        kind: 'Business Intelligence · Enterprise',
+        desc: 'Intuitive visual intelligence system turning raw sales transactions into actionable revenue insights for operational and regional leadership.',
+        metrics: [
+            { val: 'Multi-Region', lbl: 'Geographic Breakdown' },
+            { val: 'Dynamic', lbl: 'Product Line Slicers' },
+            { val: '100%', lbl: 'Zero Code Notebook Interface' }
+        ],
+        architecture: 'Star schema relational design in Power BI and Tableau. Includes calculated parameters, LOD expressions, and executive card KPIs.',
+        tags: ['Power BI', 'Tableau', 'Excel', 'Business Intelligence'],
+        live: null,
+        github: 'https://github.com/soumikbelel3-commits'
+    }
+};
+
+function initProjectModal() {
+    const modal = document.getElementById('projectModal');
+    if (!modal) return;
+    const closeBtn = document.getElementById('projectModalClose');
+    const content = document.getElementById('projectModalContent');
+
+    function openProject(id) {
+        const p = PROJECT_DATA[id];
+        if (!p) return;
+        playHaptic('chime');
+
+        content.innerHTML = `
+            <div class="pm-header">
+                <div class="pm-top-tags">
+                    <span class="pm-kind-pill">${p.kind}</span>
+                </div>
+                <h3 class="pm-title">${p.title}</h3>
+                <p class="pm-desc">${p.desc}</p>
+            </div>
+
+            <div class="pm-metrics-grid">
+                ${p.metrics.map(m => `
+                    <div class="pm-metric-box">
+                        <span class="pm-metric-val">${m.val}</span>
+                        <span class="pm-metric-lbl">${m.lbl}</span>
+                    </div>
+                `).join('')}
+            </div>
+
+            <div>
+                <h4 class="pm-section-title">Technical Architecture &amp; Implementation</h4>
+                <p class="pm-desc" style="font-size: 14px;">${p.architecture}</p>
+            </div>
+
+            <div>
+                <h4 class="pm-section-title">Technologies &amp; Libraries</h4>
+                <div class="pm-tech-chips">
+                    ${p.tags.map(t => `<span class="pm-tech-chip">${t}</span>`).join('')}
+                </div>
+            </div>
+
+            <div class="pm-actions">
+                ${p.live ? `
+                    <a href="${p.live}" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm">
+                        <span>Launch Live App</span>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                    </a>
+                ` : ''}
+                ${p.github ? `
+                    <a href="${p.github}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+                        <span>GitHub Repository</span>
+                    </a>
+                ` : ''}
+            </div>
+        `;
+
+        modal.classList.add('is-open');
+        modal.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+        playHaptic('tap');
+        modal.classList.remove('is-open');
+        modal.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+    }
+
+    document.querySelectorAll('.proj-inspect-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const id = btn.dataset.projectId;
+            openProject(id);
+        });
+    });
+
+    document.querySelectorAll('.proj-card').forEach(card => {
+        card.addEventListener('click', (e) => {
+            if (e.target.closest('a') || e.target.closest('button')) return;
+            const id = card.dataset.projectId;
+            if (id) openProject(id);
+        });
+    });
+
+    if (closeBtn) closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal.classList.contains('is-open')) {
+            closeModal();
+        }
+    });
+}
+
+/* ==========================================================================
+   Command Palette (⌘K / Ctrl+K HUD)
+   ========================================================================== */
+function initCommandPalette() {
+    const palette = document.getElementById('cmdPalette');
+    if (!palette) return;
+    const input = document.getElementById('cmdInput');
+    const results = document.getElementById('cmdResults');
+    const triggerBtn = document.getElementById('cmdKTrigger');
+    const heroBtn = document.getElementById('heroCmdKBtn');
+
+    const ITEMS = [
+        // Navigation
+        { group: 'Navigation', text: 'Hero & Live Overview', sub: 'Top of page', badge: 'Section', action: () => document.getElementById('home')?.scrollIntoView({ behavior: 'smooth' }) },
+        { group: 'Navigation', text: 'Career Journey (5 Stages)', sub: 'Data Analyst → AI Engineer', badge: 'Section', action: () => document.getElementById('journey')?.scrollIntoView({ behavior: 'smooth' }) },
+        { group: 'Navigation', text: 'Experience & Credentials', sub: '3 Internships · Calcutta University · 6 Certs', badge: 'Section', action: () => document.getElementById('experience')?.scrollIntoView({ behavior: 'smooth' }) },
+        { group: 'Navigation', text: 'Capability Graph & Skills', sub: 'Interactive neural topology', badge: 'Section', action: () => document.getElementById('skills')?.scrollIntoView({ behavior: 'smooth' }) },
+        { group: 'Navigation', text: 'Shipped Projects & Work', sub: 'Omni Terminal & analytics cases', badge: 'Section', action: () => document.getElementById('projects')?.scrollIntoView({ behavior: 'smooth' }) },
+        { group: 'Navigation', text: 'Contact & Inquiries', sub: 'soumikbelel3@gmail.com', badge: 'Section', action: () => document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' }) },
+
+        // Actions
+        { group: 'Actions', text: 'Inspect ATS Résumé', sub: 'View embedded single-page PDF', badge: 'Modal', action: () => document.getElementById('quickResumePreviewBtn')?.click() },
+        { group: 'Actions', text: 'Download Résumé (PDF)', sub: 'ATS verified format', badge: 'File', action: () => {
+            const a = document.createElement('a');
+            a.href = 'Soumik_resume.pdf';
+            a.download = 'Soumik_resume.pdf';
+            a.click();
+            showToast('Downloading Soumik_resume.pdf...', '📄');
+        } },
+        { group: 'Actions', text: 'Copy Email Address', sub: 'soumikbelel3@gmail.com', badge: 'Clipboard', action: () => {
+            navigator.clipboard.writeText('soumikbelel3@gmail.com');
+            showToast('Email copied: soumikbelel3@gmail.com', '📋');
+        } },
+        { group: 'Actions', text: 'Copy LinkedIn Profile', sub: 'linkedin.com/in/soumik-belel', badge: 'Clipboard', action: () => {
+            navigator.clipboard.writeText('https://www.linkedin.com/in/soumik-belel');
+            showToast('LinkedIn copied to clipboard', '📋');
+        } },
+        { group: 'Actions', text: 'Toggle Haptic Audio Feedback', sub: 'Tactile Web Audio synthesizer', badge: 'Setting', action: () => document.getElementById('audioToggleBtn')?.click() },
+
+        // Projects
+        { group: 'Projects', text: 'Omni Terminal', sub: 'Full-stack trading terminal (FastAPI + TimescaleDB + React)', badge: 'Project', action: () => document.querySelector('[data-project-id="omni-terminal"]')?.click() },
+        { group: 'Projects', text: 'Trader Behavior Analysis', sub: 'Behavioral clustering & P&L drivers', badge: 'Project', action: () => document.querySelector('[data-project-id="trader-behavior"]')?.click() },
+        { group: 'Projects', text: 'Global Supply Chain Risk', sub: 'Multi-echelon supplier disruption dashboard', badge: 'Project', action: () => document.querySelector('[data-project-id="supply-chain"]')?.click() },
+        { group: 'Projects', text: 'HR Attrition Classifier', sub: 'scikit-learn 0.89 ROC-AUC predictive model', badge: 'Project', action: () => document.querySelector('[data-project-id="hr-attrition"]')?.click() },
+        { group: 'Projects', text: 'Customer Segmentation', sub: 'RFM cohort matrix & K-Means clustering', badge: 'Project', action: () => document.querySelector('[data-project-id="customer-segmentation"]')?.click() },
+
+        // Skills Filter
+        { group: 'Stack Filter', text: 'Filter: Big Data & Distributed', sub: 'Spark, Kafka, Databricks, Delta Lake', badge: 'Stack', action: () => {
+            const tab = document.querySelector('[data-cluster="bigdata"]');
+            if (tab) tab.click();
+            document.getElementById('skills')?.scrollIntoView({ behavior: 'smooth' });
+        } },
+        { group: 'Stack Filter', text: 'Filter: AI / ML & GenAI', sub: 'PyTorch, Transformers, LangChain, Vector DBs', badge: 'Stack', action: () => {
+            const tab = document.querySelector('[data-cluster="ai"]');
+            if (tab) tab.click();
+            document.getElementById('skills')?.scrollIntoView({ behavior: 'smooth' });
+        } },
+        { group: 'Stack Filter', text: 'Filter: Production Core Stack', sub: 'Shipped production tools', badge: 'Filter', action: () => {
+            const q = document.querySelector('[data-filter="owned"]');
+            if (q) q.click();
+            document.getElementById('skillsFilterToolbar')?.scrollIntoView({ behavior: 'smooth' });
+        } }
+    ];
+
+    let selectedIndex = 0;
+    let filteredItems = [];
+
+    function openPalette() {
+        playHaptic('chime');
+        palette.classList.add('is-open');
+        palette.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+        input.value = '';
+        renderResults('');
+        setTimeout(() => input.focus(), 50);
+    }
+
+    function closePalette() {
+        playHaptic('tap');
+        palette.classList.remove('is-open');
+        palette.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+    }
+
+    function renderResults(q) {
+        const query = q.toLowerCase().trim();
+        filteredItems = ITEMS.filter(item => {
+            if (!query) return true;
+            return item.text.toLowerCase().includes(query) ||
+                   item.sub.toLowerCase().includes(query) ||
+                   item.group.toLowerCase().includes(query);
+        });
+
+        selectedIndex = 0;
+
+        if (!filteredItems.length) {
+            results.innerHTML = `<div class="cmd-empty">No results matching "${q}". Try "resume", "spark", "projects" or "contact".</div>`;
+            return;
+        }
+
+        let html = '';
+        let lastGroup = '';
+
+        filteredItems.forEach((item, index) => {
+            if (item.group !== lastGroup) {
+                lastGroup = item.group;
+                html += `<div class="cmd-group-label">${lastGroup}</div>`;
+            }
+            html += `
+                <div class="cmd-item ${index === selectedIndex ? 'is-selected' : ''}" data-index="${index}">
+                    <div class="cmd-item-left">
+                        <span class="cmd-item-icon">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        </span>
+                        <div>
+                            <span class="cmd-item-text">${item.text}</span>
+                            <span class="cmd-item-sub">${item.sub}</span>
+                        </div>
+                    </div>
+                    <span class="cmd-item-badge">${item.badge}</span>
+                </div>
+            `;
+        });
+
+        results.innerHTML = html;
+
+        results.querySelectorAll('.cmd-item').forEach(el => {
+            el.addEventListener('click', () => {
+                const idx = parseInt(el.dataset.index, 10);
+                executeItem(idx);
+            });
+            el.addEventListener('mouseenter', () => {
+                selectedIndex = parseInt(el.dataset.index, 10);
+                updateSelected();
+            });
+        });
+    }
+
+    function updateSelected() {
+        results.querySelectorAll('.cmd-item').forEach((el, idx) => {
+            el.classList.toggle('is-selected', idx === selectedIndex);
+            if (idx === selectedIndex) {
+                el.scrollIntoView({ block: 'nearest' });
+            }
+        });
+    }
+
+    function executeItem(idx) {
+        const item = filteredItems[idx];
+        if (item) {
+            closePalette();
+            setTimeout(() => item.action(), 100);
+        }
+    }
+
+    input.addEventListener('input', (e) => {
+        renderResults(e.target.value);
+    });
+
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            playHaptic('tap');
+            if (filteredItems.length) {
+                selectedIndex = (selectedIndex + 1) % filteredItems.length;
+                updateSelected();
+            }
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            playHaptic('tap');
+            if (filteredItems.length) {
+                selectedIndex = (selectedIndex - 1 + filteredItems.length) % filteredItems.length;
+                updateSelected();
+            }
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            playHaptic('pop');
+            executeItem(selectedIndex);
+        } else if (e.key === 'Escape') {
+            closePalette();
+        }
+    });
+
+    if (triggerBtn) triggerBtn.addEventListener('click', openPalette);
+    if (heroBtn) heroBtn.addEventListener('click', openPalette);
+
+    palette.addEventListener('click', (e) => {
+        if (e.target === palette) closePalette();
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+            e.preventDefault();
+            if (palette.classList.contains('is-open')) closePalette();
+            else openPalette();
+        } else if (e.key === '/' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+            e.preventDefault();
+            openPalette();
+        } else if (e.key === 'Escape' && palette.classList.contains('is-open')) {
+            closePalette();
+        }
+    });
+}
+
+/* ==========================================================================
    Boot
    ========================================================================== */
 /* Every init* null-guards its own elements, so projects.html runs this same
@@ -2005,4 +2670,11 @@ document.addEventListener('DOMContentLoaded', () => {
     initMagnetic();
     initTilt();
     initCursorGlow();
+    initAudioHaptics();
+    initLiveClocks();
+    initCardSpotlight();
+    initInteractiveTerminal();
+    initResumeModal();
+    initProjectModal();
+    initCommandPalette();
 });
