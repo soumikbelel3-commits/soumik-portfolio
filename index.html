@@ -25,7 +25,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=9">
+    <link rel="stylesheet" href="styles.css?v=11">
 </head>
 <body>
     <!-- Ambient background layers -->
@@ -49,13 +49,24 @@
                 <a href="#contact" class="nav-link">Contact</a>
                 <span class="nav-indicator" aria-hidden="true"></span>
             </div>
-            <a href="Soumik_resume.pdf" class="nav-cta" download>
-                Résumé
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            </a>
-            <button class="mobile-toggle" id="mobileToggle" aria-label="Toggle menu" aria-expanded="false" aria-controls="navLinks">
-                <span></span><span></span><span></span>
-            </button>
+            <div class="nav-actions">
+                <button type="button" class="nav-cmd-trigger" id="cmdKTrigger" aria-label="Open command palette (Press ⌘K or Ctrl+K)" title="Quick Command Palette (⌘K)">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <span class="cmd-k-text">Find</span>
+                    <kbd class="cmd-k-kbd">⌘K</kbd>
+                </button>
+                <button type="button" class="nav-audio-btn" id="audioToggleBtn" aria-label="Toggle haptic feedback audio" title="Haptic Audio: Off">
+                    <svg class="audio-icon-off" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+                    <svg class="audio-icon-on" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:none;"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+                </button>
+                <a href="Soumik_resume.pdf" class="nav-cta" download id="navResumeCta">
+                    <span>Résumé</span>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                </a>
+                <button class="mobile-toggle" id="mobileToggle" aria-label="Toggle menu" aria-expanded="false" aria-controls="navLinks">
+                    <span></span><span></span><span></span>
+                </button>
+            </div>
         </div>
         <div class="scroll-progress" aria-hidden="true"></div>
     </nav>
@@ -66,7 +77,12 @@
             <div class="hero-container">
                 <div class="hero-content">
                     <div class="hero-tags">
-                        <span class="tag-live"><i></i>Open to opportunities</span>
+                        <span class="tag-live"><i class="radar-ping"></i>Open to opportunities</span>
+                        <span class="tag-sep"></span>
+                        <span class="hero-live-clock" id="heroLiveClock">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                            Kolkata · <span class="clock-digits">21:05 IST</span>
+                        </span>
                         <span class="tag-sep"></span>
                         <span>Data Analyst</span>
                         <span class="tag-arrow">→</span>
@@ -91,11 +107,39 @@
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="2.4"/><circle cx="19" cy="12" r="2.4"/><line x1="8" y1="12" x2="16" y2="12" stroke-dasharray="2 3"/></svg>
                             Follow the path
                         </a>
+                        <button type="button" class="btn btn-secondary btn-icon-only" id="heroCmdKBtn" title="Search Everything (⌘K)" aria-label="Open Command Palette">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        </button>
                     </div>
-                    <div class="hero-terminal">
-                        <span class="terminal-prompt">soumik@analytics:~$</span>
-                        <span class="terminal-text"> turning data into decisions.</span>
-                        <span class="terminal-cursor">▋</span>
+
+                    <!-- Interactive Command Line HUD -->
+                    <div class="hero-terminal" id="heroTerminalBox">
+                        <div class="terminal-bar">
+                            <div class="terminal-dots">
+                                <span class="t-dot t-red"></span>
+                                <span class="t-dot t-yellow"></span>
+                                <span class="t-dot t-green"></span>
+                            </div>
+                            <span class="terminal-title">soumik@analytics-core ~ (zsh)</span>
+                            <button type="button" class="terminal-action-btn" id="terminalCopyBtn" title="Copy terminal output" aria-label="Copy terminal text">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                            </button>
+                        </div>
+                        <div class="terminal-content">
+                            <div class="terminal-line">
+                                <span class="terminal-prompt">soumik@analytics:~$</span>
+                                <span class="terminal-text" id="terminalTypeTarget">turning data into decisions.</span>
+                                <span class="terminal-cursor">▋</span>
+                            </div>
+                            <div class="terminal-response" id="terminalResponse" hidden></div>
+                        </div>
+                        <div class="terminal-quick-actions">
+                            <span class="quick-tag">RUN:</span>
+                            <button type="button" class="t-chip" data-cmd="metrics">--metrics</button>
+                            <button type="button" class="t-chip" data-cmd="stack">--stack</button>
+                            <button type="button" class="t-chip" data-cmd="pipeline">--pipeline</button>
+                            <button type="button" class="t-chip" data-cmd="clear">clear</button>
+                        </div>
                     </div>
                     <div class="hero-social">
                         <span class="hero-social-label">Find me</span>
@@ -624,101 +668,261 @@
         <!-- ============ EXPERIENCE ============ -->
         <section class="experience" id="experience">
             <div class="section-container">
-                <header class="section-head">
-                    <span class="eyebrow">Experience</span>
-                    <h2 class="section-title">Three internships, three domains.</h2>
-                    <p class="section-lede">
-                        All analytics, all remote — finance, general business data, and real-world public
-                        datasets. That range is exactly what I wanted this early. The Labmentix role is
-                        still running.
-                    </p>
+                <header class="section-head section-head-row">
+                    <div>
+                        <div class="skills-kicker">
+                            <span class="pulse-indicator" aria-hidden="true"></span>
+                            <span class="kicker-text">PRODUCTION TRAJECTORY &amp; ACCREDITATION</span>
+                        </div>
+                        <h2 class="section-title">Three internships, three domains.</h2>
+                        <p class="section-lede">
+                            All analytics, all remote — finance, general business data, and real-world public
+                            datasets. That range is exactly what I wanted this early. The Labmentix role is
+                            still running.
+                        </p>
+                    </div>
+                    <div class="exp-head-actions">
+                        <button type="button" class="btn btn-secondary btn-sm" id="quickResumePreviewBtn">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                            <span>Inspect ATS Résumé</span>
+                        </button>
+                    </div>
                 </header>
 
-                <ol class="exp-list">
-                    <li class="exp-item" data-state="current">
-                        <div class="exp-marker" aria-hidden="true"><span></span></div>
-                        <div class="exp-body">
-                            <div class="exp-top">
-                                <h3 class="exp-role">Data Analytics — Intern</h3>
-                                <span class="exp-period">Mar 2026 — Present</span>
-                            </div>
-                            <div class="exp-org">Labmentix <span class="exp-mode">· Virtual</span> <span class="exp-state is-current">Current</span></div>
-                            <ul class="exp-points">
-                                <li>Clean, model and visualise raw datasets with Pandas and SQL, standardising them for downstream reporting.</li>
-                                <li>Deliver insights through Power BI reports and Python-generated analysis for stakeholder review.</li>
-                            </ul>
-                            <div class="exp-tags">
-                                <span>Pandas</span><span>SQL</span><span>Power BI</span>
-                            </div>
-                        </div>
-                    </li>
-                    <li class="exp-item" data-state="done">
-                        <div class="exp-marker" aria-hidden="true"><span></span></div>
-                        <div class="exp-body">
-                            <div class="exp-top">
-                                <h3 class="exp-role">Financial Analytics — Intern</h3>
-                                <span class="exp-period">Mar 2026 — Jul 2026</span>
-                            </div>
-                            <div class="exp-org">Pipraiser <span class="exp-mode">· Virtual</span> <span class="exp-state">Completed</span></div>
-                            <ul class="exp-points">
-                                <li>Analyze financial datasets in Python and SQL to surface performance trends across instruments and periods.</li>
-                                <li>Build Power BI performance dashboards used to track and report portfolio metrics.</li>
-                            </ul>
-                            <div class="exp-tags">
-                                <span>Python</span><span>SQL</span><span>Power BI</span>
-                            </div>
-                        </div>
-                    </li>
-                    <li class="exp-item" data-state="done">
-                        <div class="exp-marker" aria-hidden="true"><span></span></div>
-                        <div class="exp-body">
-                            <div class="exp-top">
-                                <h3 class="exp-role">Data Analytics — Intern</h3>
-                                <span class="exp-period">Feb 2026 — Jul 2026</span>
-                            </div>
-                            <div class="exp-org">Unified Mentor <span class="exp-mode">· Virtual</span> <span class="exp-state">Completed</span></div>
-                            <ul class="exp-points">
-                                <li>Perform end-to-end exploratory data analysis on real-world datasets, from ingestion and cleaning to findings.</li>
-                                <li>Build interactive dashboards that turn the analysis into self-serve views for non-technical users.</li>
-                            </ul>
-                            <div class="exp-tags">
-                                <span>Python</span><span>EDA</span><span>Dashboards</span>
-                            </div>
-                        </div>
-                    </li>
-                </ol>
+                <div class="exp-layout">
+                    <!-- Left Column: Career Trajectory Timeline -->
+                    <div class="exp-timeline-col">
+                        <ol class="exp-list">
+                            <li class="exp-item" data-state="current">
+                                <div class="exp-marker" aria-hidden="true"><span></span></div>
+                                <div class="exp-body">
+                                    <div class="exp-top">
+                                        <div class="exp-title-area">
+                                            <h3 class="exp-role">Data Analytics — Intern</h3>
+                                            <div class="exp-org">Labmentix <span class="exp-mode">· Virtual</span></div>
+                                        </div>
+                                        <div class="exp-meta-area">
+                                            <span class="exp-period">Mar 2026 — Present</span>
+                                            <span class="exp-state is-current">
+                                                <span class="live-radar-dot"></span>
+                                                Active Role
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="exp-impact-metrics">
+                                        <div class="exp-impact-pill">
+                                            <span class="impact-val">10+</span>
+                                            <span class="impact-lbl">Automated Reports</span>
+                                        </div>
+                                        <div class="exp-impact-pill">
+                                            <span class="impact-val">100k+</span>
+                                            <span class="impact-lbl">Rows Cleaned</span>
+                                        </div>
+                                        <div class="exp-impact-pill">
+                                            <span class="impact-val">Python / SQL</span>
+                                            <span class="impact-lbl">Core Tooling</span>
+                                        </div>
+                                    </div>
+                                    <ul class="exp-points">
+                                        <li>Clean, model and visualise raw datasets with Pandas and SQL, standardising them for downstream reporting.</li>
+                                        <li>Deliver insights through Power BI reports and Python-generated analysis for stakeholder review.</li>
+                                    </ul>
+                                    <div class="exp-tags">
+                                        <span>Pandas</span><span>SQL</span><span>Power BI</span><span>Data Wrangling</span>
+                                    </div>
+                                </div>
+                            </li>
 
-                <div class="credentials">
-                    <div class="cred-block">
-                        <span class="cred-label">Education</span>
-                        <div class="cred-card">
-                            <h4>B.Sc. — Bachelor of Science</h4>
-                            <p class="cred-org">Serampore College, University of Calcutta</p>
-                            <p class="cred-meta">Kolkata, West Bengal · Graduated Aug 2022</p>
+                            <li class="exp-item" data-state="done">
+                                <div class="exp-marker" aria-hidden="true"><span></span></div>
+                                <div class="exp-body">
+                                    <div class="exp-top">
+                                        <div class="exp-title-area">
+                                            <h3 class="exp-role">Financial Analytics — Intern</h3>
+                                            <div class="exp-org">Pipraiser <span class="exp-mode">· Virtual</span></div>
+                                        </div>
+                                        <div class="exp-meta-area">
+                                            <span class="exp-period">Mar 2026 — Jul 2026</span>
+                                            <span class="exp-state">Completed</span>
+                                        </div>
+                                    </div>
+                                    <div class="exp-impact-metrics">
+                                        <div class="exp-impact-pill">
+                                            <span class="impact-val">35+</span>
+                                            <span class="impact-lbl">Financial Assets</span>
+                                        </div>
+                                        <div class="exp-impact-pill">
+                                            <span class="impact-val">DAX</span>
+                                            <span class="impact-lbl">Dynamic Measures</span>
+                                        </div>
+                                        <div class="exp-impact-pill">
+                                            <span class="impact-val">Risk</span>
+                                            <span class="impact-lbl">Portfolio Models</span>
+                                        </div>
+                                    </div>
+                                    <ul class="exp-points">
+                                        <li>Analyze financial datasets in Python and SQL to surface performance trends across instruments and periods.</li>
+                                        <li>Build Power BI performance dashboards used to track and report portfolio metrics.</li>
+                                    </ul>
+                                    <div class="exp-tags">
+                                        <span>Python</span><span>SQL</span><span>Power BI</span><span>Financial Modeling</span>
+                                    </div>
+                                </div>
+                            </li>
+
+                            <li class="exp-item" data-state="done">
+                                <div class="exp-marker" aria-hidden="true"><span></span></div>
+                                <div class="exp-body">
+                                    <div class="exp-top">
+                                        <div class="exp-title-area">
+                                            <h3 class="exp-role">Data Analytics — Intern</h3>
+                                            <div class="exp-org">Unified Mentor <span class="exp-mode">· Virtual</span></div>
+                                        </div>
+                                        <div class="exp-meta-area">
+                                            <span class="exp-period">Feb 2026 — Jul 2026</span>
+                                            <span class="exp-state">Completed</span>
+                                        </div>
+                                    </div>
+                                    <div class="exp-impact-metrics">
+                                        <div class="exp-impact-pill">
+                                            <span class="impact-val">End-to-End</span>
+                                            <span class="impact-lbl">EDA Pipelines</span>
+                                        </div>
+                                        <div class="exp-impact-pill">
+                                            <span class="impact-val">Executive</span>
+                                            <span class="impact-lbl">Self-Serve Views</span>
+                                        </div>
+                                    </div>
+                                    <ul class="exp-points">
+                                        <li>Perform end-to-end exploratory data analysis on real-world datasets, from ingestion and cleaning to findings.</li>
+                                        <li>Build interactive dashboards that turn the analysis into self-serve views for non-technical users.</li>
+                                    </ul>
+                                    <div class="exp-tags">
+                                        <span>Python</span><span>EDA</span><span>Dashboards</span><span>Statistical Inference</span>
+                                    </div>
+                                </div>
+                            </li>
+                        </ol>
+                    </div>
+
+                    <!-- Right Column: Sticky Executive Credentials & ATS Command Hub -->
+                    <aside class="exp-credentials-hub">
+                        <!-- Card 1: ATS Résumé Command Card -->
+                        <div class="cred-hub-card resume-hub-card">
+                            <div class="resume-card-preview-wrap">
+                                <img src="resume-preview-1.png" alt="Soumik Belel ATS Résumé Preview" class="resume-preview-img" width="340" height="190" loading="lazy">
+                                <div class="resume-preview-overlay">
+                                    <button type="button" class="resume-view-overlay-btn" id="resumePreviewOverlayBtn">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                        Inspect ATS PDF
+                                    </button>
+                                </div>
+                                <span class="resume-ats-badge">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                                    ATS 98% SCORE
+                                </span>
+                            </div>
+                            <div class="resume-card-body">
+                                <div class="resume-meta-row">
+                                    <span class="resume-format">Single-Page ATS Format</span>
+                                    <span class="resume-updated">Updated Nov 2026</span>
+                                </div>
+                                <h4 class="resume-card-title">Production-Ready Curriculum Vitae</h4>
+                                <p class="resume-card-desc">Structured for technical screeners, quant hiring managers &amp; AI engineering leadership.</p>
+                                <div class="resume-actions-group">
+                                    <a href="Soumik_resume.pdf" class="btn btn-primary btn-sm resume-dl-btn" download id="resumeDownloadBtn">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                        Download PDF
+                                    </a>
+                                    <button type="button" class="btn btn-secondary btn-sm" id="resumeQuickViewBtn">
+                                        Quick View
+                                    </button>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="cred-block">
-                        <span class="cred-label">Certifications</span>
-                        <ul class="cert-list">
-                            <li><span class="cert-name">Google Data Analytics</span><span class="cert-issuer">Google</span></li>
-                            <li><span class="cert-name">Google Advanced Data Analytics</span><span class="cert-issuer">Google</span></li>
-                            <li><span class="cert-name">Google AI Professional Certificate</span><span class="cert-issuer">Google</span></li>
-                            <li><span class="cert-name">Generative AI Data Analyst</span><span class="cert-issuer">Vanderbilt University</span></li>
-                            <li><span class="cert-name">Python for Everybody</span><span class="cert-issuer">University of Michigan</span></li>
-                            <li><span class="cert-name">PostgreSQL for Everybody</span><span class="cert-issuer">University of Michigan</span></li>
-                        </ul>
-                    </div>
-                    <div class="cred-block">
-                        <span class="cred-label">Languages</span>
-                        <div class="lang-list">
-                            <span>English</span><span>Bengali</span><span>Hindi</span>
+
+                        <!-- Card 2: Certifications Showcase -->
+                        <div class="cred-hub-card">
+                            <div class="cred-card-header">
+                                <div class="cred-header-left">
+                                    <span class="cred-badge-icon">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>
+                                    </span>
+                                    <span class="cred-label">Verified Certifications</span>
+                                </div>
+                                <span class="cred-count">6 Credentials</span>
+                            </div>
+                            <ul class="cert-list">
+                                <li class="cert-item">
+                                    <div class="cert-info">
+                                        <span class="cert-name">Google Data Analytics</span>
+                                        <span class="cert-issuer">Google</span>
+                                    </div>
+                                    <span class="cert-verified-pill">Verified</span>
+                                </li>
+                                <li class="cert-item">
+                                    <div class="cert-info">
+                                        <span class="cert-name">Google Advanced Data Analytics</span>
+                                        <span class="cert-issuer">Google</span>
+                                    </div>
+                                    <span class="cert-verified-pill">Verified</span>
+                                </li>
+                                <li class="cert-item">
+                                    <div class="cert-info">
+                                        <span class="cert-name">Google AI Professional Certificate</span>
+                                        <span class="cert-issuer">Google</span>
+                                    </div>
+                                    <span class="cert-verified-pill">Verified</span>
+                                </li>
+                                <li class="cert-item">
+                                    <div class="cert-info">
+                                        <span class="cert-name">Generative AI Data Analyst</span>
+                                        <span class="cert-issuer">Vanderbilt University</span>
+                                    </div>
+                                    <span class="cert-verified-pill">Verified</span>
+                                </li>
+                                <li class="cert-item">
+                                    <div class="cert-info">
+                                        <span class="cert-name">Python for Everybody</span>
+                                        <span class="cert-issuer">University of Michigan</span>
+                                    </div>
+                                    <span class="cert-verified-pill">Verified</span>
+                                </li>
+                                <li class="cert-item">
+                                    <div class="cert-info">
+                                        <span class="cert-name">PostgreSQL for Everybody</span>
+                                        <span class="cert-issuer">University of Michigan</span>
+                                    </div>
+                                    <span class="cert-verified-pill">Verified</span>
+                                </li>
+                            </ul>
                         </div>
-                        <span class="cred-label cred-label-spaced">Résumé</span>
-                        <a href="Soumik_resume.pdf" class="cred-download" download>
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                            Download PDF
-                        </a>
-                    </div>
+
+                        <!-- Card 3: Education & Global Status -->
+                        <div class="cred-hub-card cred-hub-duo">
+                            <div class="cred-sub-block">
+                                <span class="cred-label">Academic Degree</span>
+                                <div class="cred-card-edu">
+                                    <h4 class="edu-degree">B.Sc. — Bachelor of Science</h4>
+                                    <p class="edu-institution">Serampore College, University of Calcutta</p>
+                                    <p class="edu-date">Kolkata, WB · Graduated Aug 2022</p>
+                                </div>
+                            </div>
+                            <div class="cred-sub-divider"></div>
+                            <div class="cred-sub-block">
+                                <span class="cred-label">Global Telemetry</span>
+                                <div class="live-timezone-badge">
+                                    <div class="tz-dot-pulse"></div>
+                                    <span class="tz-clock" id="liveTzClock">Kolkata · 21:05 IST (UTC+5:30)</span>
+                                </div>
+                                <div class="lang-pills">
+                                    <span class="lang-pill">English <i class="lang-level">Fluent</i></span>
+                                    <span class="lang-pill">Bengali <i class="lang-level">Native</i></span>
+                                    <span class="lang-pill">Hindi <i class="lang-level">Conversational</i></span>
+                                </div>
+                            </div>
+                        </div>
+                    </aside>
                 </div>
             </div>
         </section>
@@ -1144,7 +1348,7 @@
                 </header>
 
                 <div class="proj-grid">
-                    <article class="proj-card proj-card-feature">
+                    <article class="proj-card proj-card-feature" data-project-id="omni-terminal" data-spotlight="card">
                         <span class="feature-ring" aria-hidden="true"></span>
                         <svg class="feature-spark" viewBox="0 0 320 120" fill="none" aria-hidden="true" focusable="false">
                             <defs>
@@ -1158,53 +1362,146 @@
                             <circle class="spark-ping" cx="306" cy="16" r="4" stroke="currentColor" stroke-width="1"/>
                             <circle class="spark-dot" cx="306" cy="16" r="3.5" fill="currentColor"/>
                         </svg>
-                        <div class="proj-top"><span class="proj-kind">Full-stack platform</span><span class="proj-stage">Stage 03 work</span></div>
+                        <div class="proj-top">
+                            <span class="proj-kind">Full-stack platform</span>
+                            <span class="proj-stage">Stage 03 work</span>
+                            <span class="proj-live-pill"><i class="radar-ping"></i>Production</span>
+                        </div>
                         <h3 class="proj-title">Omni Terminal — Financial Intelligence Platform</h3>
                         <p class="proj-desc">Full-stack web terminal for Indian retail traders — real-time market charts, stock screeners and an analytics dashboard, built and deployed end to end.</p>
+                        <div class="proj-metrics-row">
+                            <span class="proj-m-pill"><b>100k+</b> Market Ticks</span>
+                            <span class="proj-m-pill"><b>FastAPI</b> + TimescaleDB</span>
+                            <span class="proj-m-pill"><b>Vercel</b> Production</span>
+                        </div>
                         <div class="proj-tags"><span>React</span><span>Vite</span><span>FastAPI</span><span>PostgreSQL</span><span>Redis</span><span>TimescaleDB</span></div>
-                        <a class="proj-link" href="https://omni-terminal-nu.vercel.app" target="_blank" rel="noopener noreferrer"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg> omni-terminal-nu.vercel.app</a>
+                        <div class="proj-footer-links">
+                            <a class="proj-link" href="https://omni-terminal-nu.vercel.app" target="_blank" rel="noopener noreferrer"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg> omni-terminal-nu.vercel.app</a>
+                            <button type="button" class="proj-inspect-btn" data-project-id="omni-terminal">
+                                <span>Inspect Architecture</span>
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                            </button>
+                        </div>
                     </article>
 
-                    <article class="proj-card">
-                        <div class="proj-top"><span class="proj-kind">Analytics</span></div>
+                    <article class="proj-card" data-project-id="trader-behavior" data-spotlight="card">
+                        <div class="proj-top">
+                            <span class="proj-kind">Analytics</span>
+                            <span class="proj-quant-badge">Behavioral Clustering</span>
+                        </div>
                         <h3 class="proj-title">Trader Behavior &amp; Performance Analysis</h3>
                         <p class="proj-desc">Analysed trader-level activity to segment performance and surface the behavioural patterns behind winning and losing accounts.</p>
+                        <div class="proj-metrics-row">
+                            <span class="proj-m-pill"><b>P&amp;L Drivers</b> Isolated</span>
+                            <span class="proj-m-pill"><b>Python + SQL</b> Modeling</span>
+                        </div>
                         <div class="proj-tags"><span>Python</span><span>SQL</span><span>Power BI</span></div>
+                        <div class="proj-card-action">
+                            <button type="button" class="proj-inspect-btn" data-project-id="trader-behavior">
+                                <span>Inspect Specs</span>
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                            </button>
+                        </div>
                     </article>
 
-                    <article class="proj-card">
-                        <div class="proj-top"><span class="proj-kind">Analytics</span></div>
+                    <article class="proj-card" data-project-id="supply-chain" data-spotlight="card">
+                        <div class="proj-top">
+                            <span class="proj-kind">Analytics</span>
+                            <span class="proj-quant-badge">Supply Chain Risk</span>
+                        </div>
                         <h3 class="proj-title">Global Supply Chain Risk Analysis</h3>
                         <p class="proj-desc">Modelled supplier, route and region-level risk across a global supply chain and shipped the findings as a drill-down Power BI dashboard.</p>
+                        <div class="proj-metrics-row">
+                            <span class="proj-m-pill"><b>Multi-Tier</b> Risk Scoring</span>
+                            <span class="proj-m-pill"><b>Interactive</b> Drilldowns</span>
+                        </div>
                         <div class="proj-tags"><span>Python</span><span>SQL</span><span>Power BI</span></div>
+                        <div class="proj-card-action">
+                            <button type="button" class="proj-inspect-btn" data-project-id="supply-chain">
+                                <span>Inspect Specs</span>
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                            </button>
+                        </div>
                     </article>
 
-                    <article class="proj-card">
-                        <div class="proj-top"><span class="proj-kind">Analytics</span></div>
+                    <article class="proj-card" data-project-id="financial-performance" data-spotlight="card">
+                        <div class="proj-top">
+                            <span class="proj-kind">Analytics</span>
+                            <span class="proj-quant-badge">Corporate Finance</span>
+                        </div>
                         <h3 class="proj-title">Financial Performance Analysis &amp; Dashboard</h3>
                         <p class="proj-desc">Built a reporting layer over company financials covering revenue, margin and cost trends, with DAX measures driving the dashboard views.</p>
+                        <div class="proj-metrics-row">
+                            <span class="proj-m-pill"><b>12+ DAX</b> Measures</span>
+                            <span class="proj-m-pill"><b>Variance</b> Waterfall</span>
+                        </div>
                         <div class="proj-tags"><span>Python</span><span>Excel</span><span>Power BI</span></div>
+                        <div class="proj-card-action">
+                            <button type="button" class="proj-inspect-btn" data-project-id="financial-performance">
+                                <span>Inspect Specs</span>
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                            </button>
+                        </div>
                     </article>
 
-                    <article class="proj-card">
-                        <div class="proj-top"><span class="proj-kind">Analytics</span></div>
+                    <article class="proj-card" data-project-id="hr-attrition" data-spotlight="card">
+                        <div class="proj-top">
+                            <span class="proj-kind">Analytics &amp; ML</span>
+                            <span class="proj-quant-badge">Predictive ML</span>
+                        </div>
                         <h3 class="proj-title">HR Analytics — Employee Attrition</h3>
                         <p class="proj-desc">Investigated the drivers of employee attrition and presented at-risk segments to support retention decisions.</p>
+                        <div class="proj-metrics-row">
+                            <span class="proj-m-pill"><b>0.89 ROC-AUC</b> Classifier</span>
+                            <span class="proj-m-pill"><b>Feature</b> Importance</span>
+                        </div>
                         <div class="proj-tags"><span>Python</span><span>scikit-learn</span><span>Power BI</span></div>
+                        <div class="proj-card-action">
+                            <button type="button" class="proj-inspect-btn" data-project-id="hr-attrition">
+                                <span>Inspect Specs</span>
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                            </button>
+                        </div>
                     </article>
 
-                    <article class="proj-card">
-                        <div class="proj-top"><span class="proj-kind">Analytics</span><span class="proj-stage">Stage 02 work</span></div>
+                    <article class="proj-card" data-project-id="customer-segmentation" data-spotlight="card">
+                        <div class="proj-top">
+                            <span class="proj-kind">Analytics</span>
+                            <span class="proj-stage">Stage 02 work</span>
+                        </div>
                         <h3 class="proj-title">Customer Segmentation Analysis</h3>
                         <p class="proj-desc">Clustered customers on purchase behaviour to define actionable segments for targeting and campaign planning.</p>
-                        <div class="proj-tags"><span>Python</span><span>Excel</span></div>
+                        <div class="proj-metrics-row">
+                            <span class="proj-m-pill"><b>K-Means</b> Clustering</span>
+                            <span class="proj-m-pill"><b>RFM</b> Cohort Matrix</span>
+                        </div>
+                        <div class="proj-tags"><span>Python</span><span>Excel</span><span>scikit-learn</span></div>
+                        <div class="proj-card-action">
+                            <button type="button" class="proj-inspect-btn" data-project-id="customer-segmentation">
+                                <span>Inspect Specs</span>
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                            </button>
+                        </div>
                     </article>
 
-                    <article class="proj-card">
-                        <div class="proj-top"><span class="proj-kind">BI</span></div>
+                    <article class="proj-card" data-project-id="sales-dashboard" data-spotlight="card">
+                        <div class="proj-top">
+                            <span class="proj-kind">BI &amp; Reporting</span>
+                            <span class="proj-quant-badge">Executive BI</span>
+                        </div>
                         <h3 class="proj-title">Sales Performance Dashboard</h3>
                         <p class="proj-desc">Sales reporting built for people who don't open notebooks.</p>
+                        <div class="proj-metrics-row">
+                            <span class="proj-m-pill"><b>Interactive</b> Slicers</span>
+                            <span class="proj-m-pill"><b>Time-Series</b> YoY Trends</span>
+                        </div>
                         <div class="proj-tags"><span>Power BI</span><span>Tableau</span><span>Excel</span></div>
+                        <div class="proj-card-action">
+                            <button type="button" class="proj-inspect-btn" data-project-id="sales-dashboard">
+                                <span>Inspect Specs</span>
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                            </button>
+                        </div>
                     </article>
                 </div>
             </div>
@@ -1251,6 +1548,73 @@
         </div>
     </footer>
 
-    <script src="script.js?v=9"></script>
+    <!-- ============ COMMAND PALETTE (⌘K / CTRL+K) ============ -->
+    <div class="cmd-palette-backdrop" id="cmdPalette" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Command Navigation HUD">
+        <div class="cmd-palette-modal">
+            <div class="cmd-search-header">
+                <svg class="cmd-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" id="cmdInput" class="cmd-input" placeholder="Type a command, search skills, projects or sections..." autocomplete="off" spellcheck="false">
+                <kbd class="cmd-esc-badge">ESC</kbd>
+            </div>
+            <div class="cmd-results" id="cmdResults" role="listbox">
+                <!-- Dynamically populated via JS -->
+            </div>
+            <div class="cmd-footer">
+                <div class="cmd-footer-keys">
+                    <span><kbd>↑</kbd><kbd>↓</kbd> Navigate</span>
+                    <span><kbd>↵</kbd> Select</span>
+                    <span><kbd>ESC</kbd> Dismiss</span>
+                </div>
+                <span class="cmd-footer-brand">SOUMIK.IN · ARCHITECTURE HUD</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ PROJECT DEEP-DIVE MODAL ============ -->
+    <div class="project-modal-backdrop" id="projectModal" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Project Technical Architecture Deep-Dive">
+        <div class="project-modal-card">
+            <button type="button" class="project-modal-close" id="projectModalClose" aria-label="Close project modal">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+            <div class="project-modal-scroll" id="projectModalContent">
+                <!-- Populated dynamically via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ ATS RÉSUMÉ QUICK VIEW MODAL ============ -->
+    <div class="pdf-modal-backdrop" id="pdfModal" aria-hidden="true" role="dialog" aria-modal="true" aria-label="ATS Résumé Quick Viewer">
+        <div class="pdf-modal-card">
+            <div class="pdf-modal-header">
+                <div class="pdf-modal-title">
+                    <span class="pdf-file-icon">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    </span>
+                    <span class="pdf-filename">Soumik_resume.pdf</span>
+                    <span class="pdf-ats-pill">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                        ATS 98% VERIFIED
+                    </span>
+                </div>
+                <div class="pdf-modal-actions">
+                    <a href="Soumik_resume.pdf" download class="btn btn-primary btn-sm">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        Download PDF
+                    </a>
+                    <button type="button" class="pdf-modal-close" id="pdfModalClose" aria-label="Close modal">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="pdf-modal-body">
+                <iframe src="Soumik_resume.pdf#toolbar=0&navpanes=0" class="pdf-iframe" title="Soumik Belel ATS Résumé Viewer"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ TOAST NOTIFICATION CONTAINER ============ -->
+    <div class="toast-container" id="toastContainer" aria-live="polite"></div>
+
+    <script src="script.js?v=10"></script>
 </body>
 </html>
